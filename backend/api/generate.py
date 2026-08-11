@@ -3,6 +3,7 @@ Generate API router supporting video_id, style, and task_id parameters.
 """
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database.database import get_db
@@ -51,7 +52,20 @@ def generate_prompts(req: GenerateRequest, db: Session = Depends(get_db)):
             "prompts": task.prompts_json
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Build structured error response
+        error_type = type(e).__name__
+        stage = getattr(e, "stage", "pipeline") if hasattr(e, "stage") else "pipeline"
+        message = str(e) or "Unknown error during generation"
+        # Log is handled in service; avoid leaking secrets here
+        payload = {
+            "success": False,
+            "status": "failed",
+            "task_id": target_id,
+            "message": message,
+            "error_type": error_type,
+            "stage": stage,
+        }
+        return JSONResponse(status_code=400, content=payload)
 
 @router.get("/{task_id}")
 def get_task_status(task_id: str, db: Session = Depends(get_db)):

@@ -12,10 +12,13 @@ export async function uploadVideoApi(file: File): Promise<any> {
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Upload failed" }));
+    console.error("[DEBUG] upload error:", errorData);
     throw new Error(errorData.message || errorData.detail || "Upload failed");
   }
 
-  return res.json();
+  const data = await res.json();
+  console.log("[DEBUG] uploadVideoApi response:", data);
+  return data;
 }
 
 export async function generatePromptsApi(
@@ -23,24 +26,30 @@ export async function generatePromptsApi(
   stylePreset: string = "standard",
   sceneThreshold: number = 0.35
 ): Promise<any> {
+  const payload = {
+    video_id: taskId,
+    task_id: taskId,
+    style: stylePreset,
+    style_preset: stylePreset,
+    scene_threshold: sceneThreshold,
+  };
+  console.log("[DEBUG] generatePromptsApi request:", payload);
+
   const res = await fetch(`${API_BASE_URL}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      video_id: taskId,
-      task_id: taskId,
-      style: stylePreset,
-      style_preset: stylePreset,
-      scene_threshold: sceneThreshold,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Generation failed" }));
+    console.error("[DEBUG] generate error:", errorData);
+    // If backend provided structured error, rethrow with its message
     throw new Error(errorData.message || errorData.detail || "Prompt generation failed");
   }
-
-  return res.json();
+  const data = await res.json();
+  console.log("[DEBUG] generatePromptsApi response:", data);
+  return data;
 }
 
 export async function getTaskStatusApi(taskId: string): Promise<any> {

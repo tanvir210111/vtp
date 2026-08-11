@@ -17,7 +17,15 @@ export default function HomePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<StylePresetId>("standard");
   const [taskId, setTaskId] = useState<string | null>(null);
-  const [stepStatus, setStepStatus] = useState<number>(1);
+  const [stepState, setStepState] = useState<
+    | "idle"
+    | "uploading"
+    | "extracting"
+    | "analyzing"
+    | "generating"
+    | "completed"
+    | "failed"
+  >("idle");
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,31 +49,54 @@ export default function HomePage() {
     try {
       setIsProcessing(true);
       setError(null);
-      setStepStatus(1);
+      setStepState("uploading");
 
       // Step 1: Upload video file
       const uploadRes = await uploadVideo(selectedFile);
+      console.log("[DEBUG] upload response:", uploadRes);
       const newTaskId = uploadRes.video_id || uploadRes.task_id || uploadRes.id;
       if (!newTaskId) {
         throw new Error(uploadRes.message || "Failed to retrieve upload task ID.");
       }
+      console.log("[DEBUG] task id:", newTaskId);
       setTaskId(newTaskId);
 
       // Step 2 & 3: Frame extraction & visual analysis
-      setStepStatus(2);
+      setStepState("extracting");
       await new Promise((resolve) => setTimeout(resolve, 400));
-      
-      setStepStatus(3);
+
+      setStepState("analyzing");
       await new Promise((resolve) => setTimeout(resolve, 400));
 
       // Step 4: Run AI Pipeline Prompt Synthesis
-      setStepStatus(4);
+      setStepState("generating");
+      console.log("[DEBUG] generate request", { task_id: newTaskId, style: selectedStyle });
       const processRes = await generatePrompts(newTaskId, selectedStyle);
-      
-      setStepStatus(5);
+      console.log("[DEBUG] generate response:", processRes);
+
+      // Validate response
+      if (!processRes || processRes.success !== true) {
+        throw new Error(processRes?.message || "Generation failed on backend.");
+      }
+      if (processRes.status !== "completed") {
+        throw new Error(processRes.message || `Generation did not complete (status=${processRes.status})`);
+      }
+      const prompts = processRes.prompts || {};
+      const promptKeys = Object.keys(prompts || {});
+      console.log("[DEBUG] prompts keys:", promptKeys);
+      console.log("[DEBUG] analysis object:", processRes.analysis);
+
+      const hasStandard = Array.isArray(prompts.standard) ? prompts.standard.length > 0 : !!prompts.standard;
+      const hasCreative = Array.isArray(prompts.creative) ? prompts.creative.length > 0 : !!prompts.creative;
+      if (!hasStandard && !hasCreative) {
+        throw new Error("AI pipeline completed but returned no prompts.");
+      }
+
+      setStepState("completed");
       setResult(processRes);
     } catch (err: any) {
       console.error("Generation Error:", err);
+      setStepState("failed");
       setError(err?.message || "Failed to process video. Please check backend connectivity.");
     } finally {
       setIsProcessing(false);
@@ -124,11 +155,28 @@ export default function HomePage() {
         {/* Loading / Stepper Screen */}
         {isProcessing && (
           <div className="my-8">
-            <Loading currentStep={stepStatus} />
+            <Loading currentState={stepState} />
           </div>
         )}
 
         {/* Result Section */}
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-4">
+            <div className="flex items-start gap-4">
+              <div className="text-red-600 font-bold">Error</div>
+              <div className="text-sm text-red-800">{error}</div>
+            </div>
+            <div className="mt-3">
+              <button
+                onClick={() => handleGenerate()}
+                className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md text-sm font-medium"
+              >
+                Retry Generate
+              </button>
+            </div>
+          </div>
+        )}
+
         {result && !isProcessing && (
           <div className="space-y-6">
             <PromptCard

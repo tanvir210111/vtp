@@ -4,10 +4,17 @@ import { Upload, Layers, Eye, Sparkles, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LoadingProps {
-  currentStep?: number; // 1: Uploading, 2: Extracting Frames, 3: Analyzing Video, 4: Generating Prompt, 5: Done
+  currentState?:
+    | "idle"
+    | "uploading"
+    | "extracting"
+    | "analyzing"
+    | "generating"
+    | "completed"
+    | "failed";
 }
 
-export default function Loading({ currentStep = 2 }: LoadingProps) {
+export default function Loading({ currentState = "extracting" }: LoadingProps) {
   const steps = [
     { id: 1, label: "Uploading...", icon: Upload },
     { id: 2, label: "Extracting Frames...", icon: Layers },
@@ -15,6 +22,9 @@ export default function Loading({ currentStep = 2 }: LoadingProps) {
     { id: 4, label: "Generating Prompt...", icon: Sparkles },
     { id: 5, label: "Done", icon: CheckCircle2 },
   ];
+
+  const stateOrder = ["idle", "uploading", "extracting", "analyzing", "generating", "completed"];
+  const currentStep = Math.min(Math.max(stateOrder.indexOf(currentState) + 1, 1), steps.length);
 
   return (
     <div className="flex flex-col items-center justify-center p-8 sm:p-12 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 shadow-lg dark:shadow-2xl backdrop-blur-xl">

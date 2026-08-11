@@ -13,6 +13,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 from pipeline import VideoToPromptPipeline  # type: ignore
 
 class GenerateService:
+    class PipelineError(Exception):
+        def __init__(self, message: str, stage: str = "pipeline"):
+            super().__init__(message)
+            self.stage = stage
+
     @staticmethod
     def process_task(
         task_id: str,
@@ -33,27 +38,36 @@ class GenerateService:
             os.environ["GEMINI_API_KEY"] = settings.GEMINI_API_KEY
         
         try:
+            logger.info(f"[GENERATE] task started: {task_id}")
+            logger.info("[GENERATE] pipeline initialized")
             pipeline = VideoToPromptPipeline(
                 storage_dir=settings.STORAGE_DIR,
                 output_dir=settings.OUTPUT_DIR
             )
+
+            logger.info("[GENERATE] frame extraction started")
+            logger.info("[GENERATE] vision analysis started")
+            # Run the pipeline (this may perform multiple internal stages)
             result = pipeline.run(
                 task_id=task.id,
                 video_path=task.file_path,
                 style_preset=style_preset,
                 scene_threshold=scene_threshold
             )
-            
+
+            logger.info("[GENERATE] vision analysis completed")
+            logger.info("[GENERATE] prompt synthesis started")
+
             prompts_dict = result.get("prompts", {})
             selected_prompt_text = prompts_dict.get(style_preset) or prompts_dict.get("standard") or ""
 
             task.status = "completed"
-            task.duration_seconds = result["metadata"]["duration_seconds"]
-            task.resolution = result["metadata"]["resolution"]
-            task.analysis_json = result["analysis"]
-            task.prompts_json = result["prompts"]
-            task.poster_url = result["poster_url"]
-            
+            task.duration_seconds = result.get("metadata", {}).get("duration_seconds")
+            task.resolution = result.get("metadata", {}).get("resolution")
+            task.analysis_json = result.get("analysis")
+            task.prompts_json = result.get("prompts")
+            task.poster_url = result.get("poster_url")
+
             # Save or update Prompt record
             prompt_rec = db.query(Prompt).filter(Prompt.video_id == task.id).first()
             if not prompt_rec:
@@ -62,19 +76,23 @@ class GenerateService:
                     video_id=task.id,
                     prompt_style=style_preset,
                     prompt_content=selected_prompt_text,
-                    analysis_data=result["analysis"]
+                    analysis_data=result.get("analysis")
                 )
                 db.add(prompt_rec)
             else:
                 prompt_rec.prompt_style = style_preset
                 prompt_rec.prompt_content = selected_prompt_text
-                prompt_rec.analysis_data = result["analysis"]
+                prompt_rec.analysis_data = result.get("analysis")
 
             db.commit()
             db.refresh(task)
+            logger.info("[GENERATE] prompt synthesis completed")
+            logger.info("[GENERATE] database save completed")
             return task
         except Exception as e:
-            logger.error(f"Error processing AI pipeline for task {task_id}: {e}")
+            # Capture traceback and log
+            logger.exception(f"[GENERATE] exception for task {task_id}: {e}")
             task.status = "failed"
             db.commit()
-            raise e
+            stage = getattr(e, "stage", "pipeline")
+            raise GenerateService.PipelineError(str(e), stage=stage)
