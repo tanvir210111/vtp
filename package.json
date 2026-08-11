@@ -1,0 +1,26 @@
+{
+  "name": "video-to-prompt-monorepo",
+  "version": "1.0.0",
+  "description": "Video to AI Prompt generator using vision analysis, scene detection, and multi-model prompt synthesis.",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "start:backend": "cd backend && python -m uvicorn main:app --reload --port 8000",
+    "docker:up": "docker-compose -f docker/docker-compose.yml up --build",
+    "docker:down": "docker-compose -f docker/docker-compose.yml down"
+  },
+  "keywords": [
+    "video-to-prompt",
+    "midjourney",
+    "flux",
+    "stable-diffusion",
+    "runway-gen3",
+    "sora",
+    "vision-ai",
+    "fastapi",
+    "nextjs"
+  ],
+  "author": "Video-to-Prompt Team",
+  "license": "MIT"
+}

@@ -1,0 +1,16 @@
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+**/.venv
+**/.git
+**/.DS_Store
+storage/uploads/*
+storage/frames/*
+storage/scenes/*
+storage/thumbnails/*
+!storage/**/.gitkeep
+output/txt/*
+output/json/*
+output/markdown/*
+!output/**/.gitkeep

@@ -1,0 +1,13 @@
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
+sqlalchemy>=2.0.25
+pillow>=10.2.0
+python-multipart>=0.0.6
+aiofiles>=23.2.1
+requests>=2.31.0
+opencv-python>=4.9.0
+scenedetect>=0.6.2
+google-generativeai>=0.8.0
+google-genai>=0.3.0
