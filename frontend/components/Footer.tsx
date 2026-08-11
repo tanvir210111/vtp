@@ -227,7 +227,7 @@ export default function Footer() {
         {/* Bottom Rights & Links */}
         <div className="pt-6 border-t border-slate-200 dark:border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 font-medium">
           <div>
-            Made by <a href="https://www.linkedin.com/in/tanvir-khan-90122a30" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline">Tanvir Hossain Khan</a>, Software Engineer & SQA Engineer at Media Scope IT, CSE Final Year Student at Daffodil Institute of IT.
+            Made by <a href="https://www.linkedin.com/in/tanvir-khan-90122a30b" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline">Tanvir Hossain Khan</a>, Software Engineer & SQA Engineer at Media Scope IT, CSE Final Year Student at Daffodil Institute of IT.
           </div>
           <div className="flex items-center gap-6">
             <span className="hover:text-slate-900 dark:hover:text-slate-200 cursor-pointer">Privacy Policy</span>
