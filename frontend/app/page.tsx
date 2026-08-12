@@ -119,7 +119,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        {!result && !isProcessing && (
+        {!result && !isProcessing && !error && (
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6 sm:p-8 shadow-lg dark:shadow-2xl backdrop-blur-xl space-y-8">
             {/* Upload Area & Preview */}
             <div className="space-y-4">
@@ -160,23 +160,29 @@ export default function HomePage() {
         )}
 
         {/* Error Notification Banner */}
-        {error && (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 shadow-lg backdrop-blur-xl space-y-3 text-left">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-500 font-bold text-lg">
+        {error && !isProcessing && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 shadow-lg backdrop-blur-xl space-y-4 text-left">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-500 font-bold text-xl shrink-0">
                 ⚠️
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-red-600 dark:text-red-400">Pipeline Execution Error</h4>
-                <p className="text-xs text-red-800 dark:text-red-300 mt-0.5 font-medium">{error}</p>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-red-600 dark:text-red-400">Pipeline Execution Error</h4>
+                <p className="text-xs text-red-800 dark:text-red-300 font-medium leading-relaxed">{error}</p>
               </div>
             </div>
-            <div className="pt-1 flex items-center gap-3">
+            <div className="pt-2 flex items-center gap-3">
               <button
                 onClick={() => handleGenerate()}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
               >
                 Retry Generation
+              </button>
+              <button
+                onClick={handleClearFile}
+                className="px-5 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Choose Another Video
               </button>
             </div>
           </div>
