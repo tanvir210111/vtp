@@ -48,35 +48,82 @@ def _load_backend_dotenv_keys() -> Dict[str, str]:
 
 
 OPENAI_VISION_SYSTEM_PROMPT = (
-    "You are an expert Director of Photography and Senior AI Video Prompt Engineer.\n"
-    "You are analyzing 5 to 8 sequence keyframes extracted from a specific video clip (up to 15 seconds long).\n\n"
-    "CRITICAL DIRECTIVE: HYPER-FAITHFUL VISUAL REVERSE ENGINEERING\n"
-    "- Your analysis MUST be 100% faithful to the EXACT visual content in the provided keyframe images.\n"
-    "- DO NOT use generic placeholders or hallucinate details that are not in the video.\n"
-    "- Identify the EXACT subject (person, animal, vehicle, landscape, 3D object), exact wardrobe & clothing colors, exact spatial layout, exact background environment, exact physical actions occurring across frames, exact lighting sources, and exact color palette.\n"
-    "- In 'model_prompts' (midjourney, flux, sora, veo, kling, runway, luma), write complete, multi-sentence (80-200 word) prompts describing the PRECISE visual details observed in these keyframe images so an AI generator can reproduce this exact video.\n\n"
+    "You are a Director of Photography and Senior AI Vision Analyst specializing in granular video frame analysis.\n"
+    "You are provided with 10 sequence keyframes extracted evenly across a video clip (up to 15 seconds long).\n\n"
+    "CRITICAL DIRECTIVE 1: EXACT EMOTION TAXONOMY\n"
+    "You MUST classify the primary emotion, facial expression, and mood from this EXACT allowed list:\n"
+    "- Neutral (স্বাভাবিক/কোনো বিশেষ emotion নেই)\n"
+    "- Happy (খুশি, আনন্দ)\n"
+    "- Sad (দুঃখ, মন খারাপ)\n"
+    "- Angry (রাগ)\n"
+    "- Fearful (ভয়/আতঙ্ক)\n"
+    "- Surprised (অবাক)\n"
+    "- Disgusted (বিরক্ত/ঘৃণা)\n"
+    "- Confused (বিভ্রান্ত)\n"
+    "- Excited (উত্তেজিত/উচ্ছ্বসিত)\n"
+    "- Worried / Anxious (চিন্তিত/উদ্বিগ্ন)\n"
+    "- Calm / Relaxed (শান্ত/relaxed)\n"
+    "- Embarrassed / Shy (লজ্জিত/সংকোচ)\n"
+    "- Love / Affection (ভালোবাসা/স্নেহ)\n"
+    "- Focused / Serious (মনোযোগী/গম্ভীর)\n"
+    "- Smirking / Sarcastic (মুচকি হাসি/ব্যঙ্গাত্মক)\n\n"
+    "CRITICAL DIRECTIVE 2: COMPREHENSIVE FRAME-BY-FRAME ANALYSIS CHECKLIST\n"
+    "For all 10 keyframes, systematically evaluate:\n"
+    "1. Face emotion & Facial expression (eyes, mouth, brow shape)\n"
+    "2. Eye direction / gaze (looking at camera, subject, side, down, away)\n"
+    "3. Head position (tilted, turned left/right, nodding, upright)\n"
+    "4. Body posture & Hand gesture (crossed arms, gesturing, open posture, sitting, standing, leaning)\n"
+    "5. Body movement & Actions (walking, running, turning, reaching, physical interactions)\n"
+    "6. Person-to-person interaction & Object interaction (holding, touching, speaking to another)\n"
+    "7. Scene / environment & Lighting (indoor/outdoor, light source, shadow fill, key light)\n"
+    "8. Color / visual mood & Color grade\n"
+    "9. Camera angle, movement & Shot type (close-up, medium, wide, low angle, high angle, tracking)\n"
+    "10. Text / subtitle / lip movement / audio mood\n\n"
     "Return ONLY a valid JSON object matching this exact structure:\n"
     "{\n"
-    '  "summary": "Exhaustive multi-sentence visual summary of the exact scene, action, subject, camera motion, and atmosphere across these keyframes",\n'
-    '  "people": [{"count": 1, "gender": "Male/Female/Neutral/N/A", "age_group": "Young Adult/Adult/etc.", "clothes": "Exact outfit, fabric, and colors seen in keyframes", "accessories": "Exact optical glasses, hats, jewellery, or N/A", "position": "Exact spatial position in frame"}],\n'
-    '  "objects": ["exact detailed object 1 seen in frames", "exact object 2", "exact object 3"],\n'
-    '  "actions": ["exact physical movement 1 observed across frames", "micro-gesture 2"],\n'
-    '  "camera": {"framing": "Exact framing (e.g. Medium Close-up)", "angle": "Exact angle (e.g. Low Angle / Eye Level)", "movement": "Exact observed motion (e.g. Push-in / Tracking Pan / Handheld)", "lens": "Estimated prime lens feel (e.g. 35mm f/1.4)", "depth_of_field": "Depth of field observation"},\n'
-    '  "lighting": {"environment_type": "Indoor/Outdoor/Studio", "brightness": "Observed light level", "source": "Exact light sources (e.g. Golden hour sun, Overhead fluorescent, Neon sign)", "temperature": "Warm/Cool/Neutral", "description": "Detailed lighting breakdown with direction and shadow fill"},\n'
+    '  "summary": "Exhaustive visual summary across all 10 keyframes detailing progression of action, emotions, lighting, and camera work",\n'
+    '  "emotions": {\n'
+    '     "primary_emotion": "Select EXACT emotion from allowed list above (e.g. Focused / Serious or Happy)",\n'
+    '     "facial_expression": "Detailed description of eyes, mouth, brow, and micro-expressions observed across keyframes",\n'
+    '     "confidence": 0.98,\n'
+    '     "mood_tone": "Specific emotional mood tone",\n'
+    '     "emotions_list": ["Primary Emotion", "Secondary Emotion"]\n'
+    '  },\n'
+    '  "people": [{\n'
+    '     "count": 1,\n'
+    '     "gender": "Male/Female/Neutral/N/A",\n'
+    '     "age_group": "Young Adult/Adult/etc.",\n'
+    '     "clothes": "Exact outfit, fabric, and colors seen in keyframes",\n'
+    '     "position": "Exact spatial position",\n'
+    '     "eye_gaze": "Exact eye direction/gaze",\n'
+    '     "head_position": "Exact head posture/angle",\n'
+    '     "body_posture": "Exact body posture and stance",\n'
+    '     "hand_gestures": "Exact hand and arm placement/gestures"\n'
+    '  }],\n'
+    '  "objects": ["exact object 1 with interaction details", "exact object 2"],\n'
+    '  "actions": ["exact physical action 1", "person-to-person interaction 2"],\n'
+    '  "camera": {\n'
+    '     "framing": "Exact shot type (Close-up / Medium Shot / Wide Shot)",\n'
+    '     "angle": "Exact camera angle (Eye Level / Low Angle / High Angle)",\n'
+    '     "movement": "Exact camera movement (Push-in / Tracking Pan / Static)",\n'
+    '     "lens": "Estimated prime lens feel (e.g. 35mm f/1.4)",\n'
+    '     "depth_of_field": "Depth of field observation"\n'
+    '  },\n'
+    '  "lighting": {"environment_type": "Indoor/Outdoor/Studio", "brightness": "Observed light level", "source": "Exact light sources", "temperature": "Warm/Cool/Neutral", "description": "Detailed lighting breakdown"},\n'
     '  "colors": {"name": "Dominant color palette name", "palette": ["#HEX1", "#HEX2", "#HEX3"], "saturation": "High/Normal/Muted", "contrast": "High/Medium/Soft", "description": "Exact color grading breakdown"},\n'
-    '  "environment": {"setting": "Exact location (e.g. Modern kitchen, Mountain trail, Industrial warehouse)", "atmosphere": "Rich atmosphere & vibe", "location_type": "Indoor/Outdoor", "background": "Exact background architecture & elements"},\n'
-    '  "emotions": {"primary_emotion": "Primary facial or scene emotion", "confidence": 0.98, "mood_tone": "Cinematic mood", "emotions_list": ["emotion1", "emotion2"]},\n'
+    '  "environment": {"setting": "Exact location setting", "atmosphere": "Rich atmosphere & vibe", "location_type": "Indoor/Outdoor", "background": "Exact background architecture & elements"},\n'
     '  "model_prompts": {\n'
-    '     "midjourney": "Ultra-detailed visual prompt for Midjourney v6 describing the EXACT subject, clothing, setting, composition, lighting, and lens parameters --ar 16:9 --v 6.0 --style raw",\n'
-    '     "flux": "Detailed photorealistic description for Flux.1 with exact surface micro-textures, volumetric illumination, color grading hex, and focal distance.",\n'
-    '     "sora": "Complete 80-200 word prompt for OpenAI Sora detailing exact physical dynamics, temporal coherence, camera rig, subject movement, 60fps photorealism matching these keyframes.",\n'
-    '     "veo": "Complete 80-200 word prompt for Google Veo video generation detailing exact scene progression, camera dynamics, lighting, subject action, 4K quality.",\n'
+    '     "midjourney": "Ultra-detailed visual prompt for Midjourney v6 describing subject, expression, gaze, posture, setting, lighting, lens parameters --ar 16:9 --v 6.0 --style raw",\n'
+    '     "flux": "Detailed photorealistic description for Flux.1 with exact facial micro-textures, posture, gaze, lighting hex, focal distance.",\n'
+    '     "sora": "Complete 80-200 word prompt for OpenAI Sora detailing exact physical dynamics, temporal coherence, camera rig, subject movement, 60fps photorealism matching these 10 keyframes.",\n'
+    '     "veo": "Complete 80-200 word prompt for Google Veo video generation detailing exact scene progression, facial expression, camera dynamics, lighting, 4K quality.",\n'
     '     "kling": "Detailed video prompt for Kling AI structured into [Camera Movement], [Subject & Action], [Lighting & Atmosphere], [Setting] matching the exact clip.",\n'
     '     "runway": "Ultra-fluid prompt for Runway Gen-3 Alpha detailing exact camera velocity, motion guidance, and depth of field.",\n'
-    '     "luma": "Hyper-realistic prompt for Luma Dream Machine highlighting exact physical movements and lighting seen in the video."\n'
+    '     "luma": "Hyper-realistic prompt for Luma Dream Machine highlighting exact physical movements, gestures, and lighting seen in the video."\n'
     '  }\n'
     "}"
 )
+
 
 
 
@@ -154,8 +201,8 @@ class ModelLoader:
             return None
 
     @staticmethod
-    def _select_evenly_spaced(frame_paths: List[str], max_frames: int = 8) -> List[str]:
-        """Pick 5 to 8 frames evenly spaced across the full list."""
+    def _select_evenly_spaced(frame_paths: List[str], max_frames: int = 10) -> List[str]:
+        """Pick 10 frames evenly spaced across the full list."""
         if not frame_paths:
             return []
         n = len(frame_paths)
@@ -172,7 +219,7 @@ class ModelLoader:
         model_name: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Executes a SINGLE OpenAI Vision API call sending ALL 5-8 keyframe images in ONE ChatCompletion request.
+        Executes a SINGLE OpenAI Vision API call sending ALL 10 keyframe images in ONE ChatCompletion request.
         Uses 'detail: low' (85 tokens per frame) to minimize token consumption and reduce latency.
         """
         openai_key = os.environ.get("OPENAI_API_KEY") or self.openai_api_key
@@ -184,7 +231,7 @@ class ModelLoader:
             logger.warning("No frame paths provided for OpenAI vision analysis.")
             return None
 
-        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=8)
+        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=10)
         if not sample_frames:
             return None
 

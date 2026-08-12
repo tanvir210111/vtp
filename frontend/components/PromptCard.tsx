@@ -110,6 +110,14 @@ export default function PromptCard({ prompts, analysis, taskId }: PromptCardProp
               <p className="text-slate-900 dark:text-white font-bold">{getColorText()}</p>
             </div>
 
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-3 shadow-xs">
+              <span className="text-slate-600 dark:text-slate-400 font-semibold flex items-center gap-1.5 mb-1">
+                <Sparkles className="h-3.5 w-3.5 text-rose-500" /> Emotion & Expression
+              </span>
+              <p className="text-slate-900 dark:text-white font-bold">{analysis?.emotions?.primary_emotion || "Neutral"}</p>
+              <p className="text-slate-500 dark:text-slate-400 mt-1 font-mono">{analysis?.emotions?.facial_expression || analysis?.emotions?.mood_tone || "Natural tone"}</p>
+            </div>
+
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-3 md:col-span-2 lg:col-span-3 shadow-xs">
               <span className="text-slate-600 dark:text-slate-400 font-semibold flex items-center gap-1.5 mb-1">
                 <Activity className="h-3.5 w-3.5 text-emerald-500" /> Subject & Kinetic Actions

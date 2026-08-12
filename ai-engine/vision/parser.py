@@ -109,10 +109,11 @@ class VisionParser:
             confidence_val = 0.92
 
         emotions_norm = {
-            "primary_emotion": emotions.get("primary_emotion", "Happy"),
+            "primary_emotion": emotions.get("primary_emotion", "Neutral"),
+            "facial_expression": emotions.get("facial_expression", "Natural facial expression"),
             "confidence": confidence_val,
-            "mood_tone": emotions.get("mood_tone", "Optimistic, energetic, inspiring"),
-            "emotions_list": emotions.get("emotions_list", ["Happy", "Neutral"])
+            "mood_tone": emotions.get("mood_tone", "Cinematic visual tone"),
+            "emotions_list": emotions.get("emotions_list", ["Neutral"])
         }
 
         timeline = parsed_json.get("timeline", [])

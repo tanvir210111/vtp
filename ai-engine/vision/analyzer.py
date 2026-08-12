@@ -37,13 +37,13 @@ class VisionAnalyzer:
         duration = float(meta.get("duration_seconds", meta.get("duration", 10.0)))
         fps = int(meta.get("fps", 30))
 
-        # Select 5 to 8 frames evenly spaced across 15sec video clip
-        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=8)
+        # Select 10 frames evenly spaced across 15sec video clip
+        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=10)
 
         raw_vision_response = None
         engine_mode = None
 
-        # 1. Primary: OpenAI Vision API (Single request containing all 5-8 keyframes)
+        # 1. Primary: OpenAI Vision API (Single request containing all 10 keyframes)
         if self.model_loader.openai_api_key:
             try:
                 raw_vision_response = self.model_loader.analyze_frames_openai_vision(
@@ -89,8 +89,8 @@ class VisionAnalyzer:
         return analysis_data
 
     @staticmethod
-    def _select_evenly_spaced(frame_paths: List[str], max_frames: int = 8) -> List[str]:
-        """Pick up to max_frames frames evenly spaced across the full list."""
+    def _select_evenly_spaced(frame_paths: List[str], max_frames: int = 10) -> List[str]:
+        """Pick up to 10 frames evenly spaced across the full list."""
         if not frame_paths:
             return []
 
