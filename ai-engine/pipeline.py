@@ -114,49 +114,62 @@ class VideoToPromptPipeline:
         emotion_str = emo_dict.get("primary_emotion", "confident")
         mood_str = emo_dict.get("mood_tone", "cinematic")
 
-        # Synthesize ultra-detailed model-tailored prompts if Gemini didn't supply them directly
-        mj_prompt = ai_model_prompts.get("midjourney") or (
-            f"Hyper-photorealistic cinematic 8k masterpiece film still of {person_str}, {clothes_str}, {pos_str}. "
-            f"Subject is actively {action_str} in a {env_setting}. Foreground elements include {subj_str}, background with {env_bg}. "
-            f"Atmosphere: {env_atmosphere}, evoking a {emotion_str} and {mood_str} feel. Shot in {cam_framing} from an {cam_angle} on a {cam_lens}, {cam_dof}. "
-            f"{light_bright} {light_temp.lower()} lighting sourced from {light_src}, {light_desc}. Color graded in {color_grade} ({color_palette}) --ar 16:9 --v 6.0 --style raw --stylize 250"
+        facial_expr = emo_dict.get("facial_expression", "")
+        eye_gaze = p.get("eye_gaze", "") if people_list else ""
+        body_posture = p.get("body_posture", "") if people_list else ""
+        hand_gestures = p.get("hand_gestures", "") if people_list else ""
+
+        enrichment_suffix = (
+            f"Subject: {person_str}, {clothes_str}, positioned at {pos_str}. "
+            f"Facial expression: {emotion_str} ({facial_expr}). Eye direction: {eye_gaze}. Body posture: {body_posture}. Hand gestures: {hand_gestures}. "
+            f"Action dynamics: {action_str} with {subj_str}. Environment: {env_setting}, background showcasing {env_bg}, atmosphere: {env_atmosphere}. "
+            f"Shot in {cam_framing} at {cam_angle} on a {cam_lens} with {cam_dof}. Camera movement: {cam_move}. "
+            f"Lighting: {light_bright} {light_temp.lower()} light from {light_src} ({light_desc}). Color grading: {color_grade} ({color_palette})."
         )
 
-        flux_prompt = ai_model_prompts.get("flux") or (
-            f"A high dynamic range photorealistic film still of {person_str} {clothes_str} performing {action_str} inside {env_setting}. "
-            f"Foreground features crisp physical micro-textures on {subj_str}. Background architecture showcases {env_bg}. "
-            f"{light_bright} volumetric ray lighting from {light_src}, creating soft shadow falloff. "
-            f"Captured with {cam_lens} in {cam_framing}, color graded in {color_grade} palette ({color_palette}). Ultra crisp 8k focal clarity."
+        def _ensure_rich(prompt_str: Optional[str], default_str: str) -> str:
+            if not prompt_str or len(prompt_str.split()) < 50:
+                if prompt_str:
+                    return f"{prompt_str.strip()} {enrichment_suffix.strip()}"
+                return default_str
+            return prompt_str
+
+        mj_prompt = _ensure_rich(
+            ai_model_prompts.get("midjourney"),
+            f"Hyper-photorealistic 8k film still of {person_str}, {clothes_str}, {pos_str}. Facial expression: {emotion_str} ({facial_expr}). Eye direction: {eye_gaze}. Posture: {body_posture}. Hand gestures: {hand_gestures}. Actively {action_str} in a {env_setting}. Foreground: {subj_str}, background: {env_bg}. Atmosphere: {env_atmosphere}, mood: {mood_str}. Shot in {cam_framing} from {cam_angle} on a {cam_lens}, {cam_dof}. {light_bright} {light_temp.lower()} lighting sourced from {light_src}, {light_desc}. Color graded in {color_grade} ({color_palette}) --ar 16:9 --v 6.0 --style raw --stylize 250"
         )
 
-        sora_prompt = ai_model_prompts.get("sora") or (
-            f"A continuous 60fps ultra-realistic video sequence of {person_str} {clothes_str} engaged in {action_str} in a {env_setting}. "
-            f"The camera moves seamlessly in a smooth {cam_move} from {cam_framing} at {cam_angle}. Natural physical collision dynamics with {subj_str}, "
-            f"illuminated by {light_bright} {light_temp.lower()} light ({light_desc}). Strong temporal coherence, photorealistic fluid mechanics, {mood_str} mood."
+        flux_prompt = _ensure_rich(
+            ai_model_prompts.get("flux"),
+            f"High dynamic range photorealistic film still of {person_str} {clothes_str} performing {action_str} inside {env_setting}. Expression: {emotion_str} ({facial_expr}), gaze: {eye_gaze}, posture: {body_posture}. Crisp micro-textures on {subj_str}, background architecture: {env_bg}. {light_bright} volumetric ray lighting from {light_src}, soft shadow falloff. Captured with {cam_lens} in {cam_framing}, color graded in {color_grade} palette ({color_palette}). Ultra crisp 8k focal clarity."
         )
 
-        veo_prompt = ai_model_prompts.get("veo") or (
-            f"A cinematic 4k video sequence of {person_str} {clothes_str} {action_str} at {env_setting}. "
-            f"Filmed in {cam_framing} using a {cam_lens} with a dynamic {cam_move}. Volumetric illumination with {light_desc}, "
-            f"rich {color_grade} color grading ({color_palette}), depth of field: {cam_dof}, smooth physical motion."
+        sora_prompt = _ensure_rich(
+            ai_model_prompts.get("sora"),
+            f"Continuous 60fps ultra-realistic video sequence of {person_str} {clothes_str} engaged in {action_str} in {env_setting}. Facial expression: {emotion_str} ({facial_expr}), eye gaze: {eye_gaze}, posture: {body_posture}, gestures: {hand_gestures}. Camera moves in smooth {cam_move} from {cam_framing} at {cam_angle}. Physical collision dynamics with {subj_str}, illuminated by {light_bright} {light_temp.lower()} light ({light_desc}). Strong temporal coherence, photorealistic fluid mechanics, {mood_str} mood."
         )
 
-        kling_prompt = ai_model_prompts.get("kling") or (
+        veo_prompt = _ensure_rich(
+            ai_model_prompts.get("veo"),
+            f"Cinematic 4k video sequence of {person_str} {clothes_str} {action_str} at {env_setting}. Facial expression: {emotion_str} ({facial_expr}), eye gaze: {eye_gaze}, posture: {body_posture}. Filmed in {cam_framing} using {cam_lens} with dynamic {cam_move}. Volumetric illumination with {light_desc}, rich {color_grade} color grading ({color_palette}), depth of field: {cam_dof}, smooth physical motion."
+        )
+
+        kling_prompt = _ensure_rich(
+            ai_model_prompts.get("kling"),
             f"[Camera Movement]: {cam_move} from {cam_framing}. "
-            f"[Subject & Action]: {person_str} {clothes_str} {action_str} with {subj_str}. Expression: {emotion_str}. "
+            f"[Subject & Action]: {person_str} {clothes_str} {action_str} with {subj_str}. Expression: {emotion_str} ({facial_expr}), gaze: {eye_gaze}, posture: {body_posture}. "
             f"[Lighting & Atmosphere]: {light_desc}, {env_atmosphere}. "
-            f"[Setting]: {env_setting}. [Color Tone]: {color_grade}."
+            f"[Setting]: {env_setting}. [Color Tone]: {color_grade} ({color_palette})."
         )
 
-        runway_prompt = ai_model_prompts.get("runway") or (
-            f"Cinematic video clip of {person_str} {clothes_str} {action_str} in {env_setting}. "
-            f"Camera motion: smooth {cam_move}, {cam_framing}, {cam_lens}. Volumetric lighting from {light_src}, "
-            f"{color_grade} color grading, 4k 60fps, photorealistic consistency."
+        runway_prompt = _ensure_rich(
+            ai_model_prompts.get("runway"),
+            f"Cinematic video clip of {person_str} {clothes_str} {action_str} in {env_setting}. Expression: {emotion_str} ({facial_expr}), eye direction: {eye_gaze}, posture: {body_posture}. Camera motion: smooth {cam_move}, {cam_framing}, {cam_lens}. Volumetric lighting from {light_src}, {color_grade} color grading, 4k 60fps, photorealistic consistency."
         )
 
-        luma_prompt = ai_model_prompts.get("luma") or (
-            f"Hyper-realistic 4k video shot: {person_str} {clothes_str} performing {action_str} set in {env_setting}. "
-            f"Dynamic camera work: {cam_move}, {cam_framing}. Soft volumetric lighting, {color_grade} color scheme, smooth motion dynamics."
+        luma_prompt = _ensure_rich(
+            ai_model_prompts.get("luma"),
+            f"Hyper-realistic 4k video shot: {person_str} {clothes_str} performing {action_str} set in {env_setting}. Expression: {emotion_str} ({facial_expr}), posture: {body_posture}, gestures: {hand_gestures}. Dynamic camera work: {cam_move}, {cam_framing}. Soft volumetric lighting, {color_grade} color scheme, smooth motion dynamics."
         )
 
         all_prompts = {

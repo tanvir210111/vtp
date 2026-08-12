@@ -79,12 +79,16 @@ OPENAI_VISION_SYSTEM_PROMPT = (
     "8. Color / visual mood & Color grade\n"
     "9. Camera angle, movement & Shot type (close-up, medium, wide, low angle, high angle, tracking)\n"
     "10. Text / subtitle / lip movement / audio mood\n\n"
+    "CRITICAL DIRECTIVE 3: MANDATORY EXHAUSTIVE PROMPT LENGTH\n"
+    "- DO NOT RETURN SHORT PROMPTS, ONE-LINERS, OR ABSTRACT SUMMARIES.\n"
+    "- Every single prompt in 'model_prompts' (midjourney, flux, sora, veo, kling, runway, luma) MUST be a complete, highly descriptive, 150 to 300 word visual narrative masterwork.\n"
+    "- Detail the exact subject, micro facial expressions, eye gaze, head position, body posture, hand gestures, exact wardrobe & fabric colors, background architecture, volumetric lighting sources, color palette hex codes, lens optics, and camera motion.\n\n"
     "Return ONLY a valid JSON object matching this exact structure:\n"
     "{\n"
-    '  "summary": "Exhaustive visual summary across all 10 keyframes detailing progression of action, emotions, lighting, and camera work",\n'
+    '  "summary": "Exhaustive 4-6 sentence visual summary across all 10 keyframes detailing progression of action, emotions, facial expressions, eye gaze, posture, lighting, and camera work",\n'
     '  "emotions": {\n'
     '     "primary_emotion": "Select EXACT emotion from allowed list above (e.g. Focused / Serious or Happy)",\n'
-    '     "facial_expression": "Detailed description of eyes, mouth, brow, and micro-expressions observed across keyframes",\n'
+    '     "facial_expression": "Detailed 2-sentence breakdown of eyes, mouth, brow, and micro-expressions observed across keyframes",\n'
     '     "confidence": 0.98,\n'
     '     "mood_tone": "Specific emotional mood tone",\n'
     '     "emotions_list": ["Primary Emotion", "Secondary Emotion"]\n'
@@ -113,13 +117,13 @@ OPENAI_VISION_SYSTEM_PROMPT = (
     '  "colors": {"name": "Dominant color palette name", "palette": ["#HEX1", "#HEX2", "#HEX3"], "saturation": "High/Normal/Muted", "contrast": "High/Medium/Soft", "description": "Exact color grading breakdown"},\n'
     '  "environment": {"setting": "Exact location setting", "atmosphere": "Rich atmosphere & vibe", "location_type": "Indoor/Outdoor", "background": "Exact background architecture & elements"},\n'
     '  "model_prompts": {\n'
-    '     "midjourney": "Ultra-detailed visual prompt for Midjourney v6 describing subject, expression, gaze, posture, setting, lighting, lens parameters --ar 16:9 --v 6.0 --style raw",\n'
-    '     "flux": "Detailed photorealistic description for Flux.1 with exact facial micro-textures, posture, gaze, lighting hex, focal distance.",\n'
-    '     "sora": "Complete 80-200 word prompt for OpenAI Sora detailing exact physical dynamics, temporal coherence, camera rig, subject movement, 60fps photorealism matching these 10 keyframes.",\n'
-    '     "veo": "Complete 80-200 word prompt for Google Veo video generation detailing exact scene progression, facial expression, camera dynamics, lighting, 4K quality.",\n'
-    '     "kling": "Detailed video prompt for Kling AI structured into [Camera Movement], [Subject & Action], [Lighting & Atmosphere], [Setting] matching the exact clip.",\n'
-    '     "runway": "Ultra-fluid prompt for Runway Gen-3 Alpha detailing exact camera velocity, motion guidance, and depth of field.",\n'
-    '     "luma": "Hyper-realistic prompt for Luma Dream Machine highlighting exact physical movements, gestures, and lighting seen in the video."\n'
+    '     "midjourney": "Exhaustive 150-300 word visual prompt for Midjourney v6 describing exact subject, facial expression, eye gaze, posture, hand gestures, wardrobe, setting, background geometry, volumetric lighting, color grade, and lens parameters --ar 16:9 --v 6.0 --style raw",\n'
+    '     "flux": "Exhaustive 150-300 word photorealistic prompt for Flux.1 describing exact facial micro-textures, posture, hand gestures, clothing, background elements, volumetric illumination, color grading hex, and focal distance.",\n'
+    '     "sora": "Exhaustive 150-300 word video generation prompt for OpenAI Sora detailing exact physical dynamics, temporal coherence, camera rig, subject movement, 60fps photorealism matching these 10 keyframes.",\n'
+    '     "veo": "Exhaustive 150-300 word prompt for Google Veo video generation detailing exact scene progression, facial expression, body gestures, camera dynamics, lighting, 4K quality.",\n'
+    '     "kling": "Exhaustive 150-300 word video prompt for Kling AI structured into [Camera Movement], [Subject & Action], [Lighting & Atmosphere], [Setting] matching the exact clip.",\n'
+    '     "runway": "Exhaustive 150-300 word prompt for Runway Gen-3 Alpha detailing exact camera velocity, motion guidance, subject gestures, and depth of field.",\n'
+    '     "luma": "Exhaustive 150-300 word prompt for Luma Dream Machine highlighting exact physical movements, facial expression, gestures, and lighting seen in the video."\n'
     '  }\n'
     "}"
 )
@@ -270,7 +274,7 @@ class ModelLoader:
                 }
             ],
             "response_format": {"type": "json_object"},
-            "max_tokens": 2500,
+            "max_tokens": 4000,
             "temperature": 0.2
         }
 
