@@ -4,6 +4,8 @@ import { useState } from "react";
 import CopyButton from "./CopyButton";
 import { Sparkles, Eye, Camera, Lightbulb, Palette, Activity } from "lucide-react";
 
+import { getDownloadExportUrl } from "@/lib/api";
+
 interface PromptCardProps {
   prompts: Record<string, string>;
   analysis?: any;
@@ -157,24 +159,27 @@ export default function PromptCard({ prompts, analysis, taskId }: PromptCardProp
             <CopyButton text={currentPrompt} />
 
             <a
-              href={taskId ? `/api/download/${taskId}?format=txt` : "#"}
-              download
+              href={taskId ? getDownloadExportUrl(taskId, "txt") : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-xs"
             >
               <span>Download TXT</span>
             </a>
 
             <a
-              href={taskId ? `/api/download/${taskId}?format=json` : "#"}
-              download
+              href={taskId ? getDownloadExportUrl(taskId, "json") : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-xs"
             >
               <span>Download JSON</span>
             </a>
 
             <a
-              href={taskId ? `/api/download/${taskId}?format=markdown` : "#"}
-              download
+              href={taskId ? getDownloadExportUrl(taskId, "markdown") : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-xs"
             >
               <span>Download Markdown</span>

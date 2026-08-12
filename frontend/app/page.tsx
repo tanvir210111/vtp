@@ -159,19 +159,24 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Result Section */}
+        {/* Error Notification Banner */}
         {error && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-4">
-            <div className="flex items-start gap-4">
-              <div className="text-red-600 font-bold">Error</div>
-              <div className="text-sm text-red-800">{error}</div>
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 shadow-lg backdrop-blur-xl space-y-3 text-left">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-500 font-bold text-lg">
+                ⚠️
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-red-600 dark:text-red-400">Pipeline Execution Error</h4>
+                <p className="text-xs text-red-800 dark:text-red-300 mt-0.5 font-medium">{error}</p>
+              </div>
             </div>
-            <div className="mt-3">
+            <div className="pt-1 flex items-center gap-3">
               <button
                 onClick={() => handleGenerate()}
-                className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md text-sm font-medium"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition-all"
               >
-                Retry Generate
+                Retry Generation
               </button>
             </div>
           </div>
