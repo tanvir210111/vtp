@@ -209,8 +209,8 @@ class ModelLoader:
             return None
 
     @staticmethod
-    def _select_evenly_spaced(frame_paths: List[str], max_frames: int = 10) -> List[str]:
-        """Pick 10 frames evenly spaced across the full list."""
+    def _select_evenly_spaced(frame_paths: List[str], max_frames: int = 12) -> List[str]:
+        """Pick 12 frames evenly spaced across the full list."""
         if not frame_paths:
             return []
         n = len(frame_paths)
@@ -221,7 +221,7 @@ class ModelLoader:
         return [frame_paths[i] for i in indices]
 
     def transcribe_audio_openai(self, audio_path: str) -> Optional[Dict[str, Any]]:
-        """Transcribe audio track using OpenAI Whisper API to capture dialogue, speech, and language."""
+        """Transcribe audio track using OpenAI Whisper API with verbose precision & zero-temperature mode."""
         openai_key = os.environ.get("OPENAI_API_KEY") or self.openai_api_key
         if not openai_key or not audio_path or not os.path.exists(audio_path):
             return None
@@ -230,17 +230,36 @@ class ModelLoader:
             headers = {"Authorization": f"Bearer {openai_key}"}
             with open(audio_path, "rb") as f:
                 files = {"file": (os.path.basename(audio_path), f, "audio/mpeg")}
-                data = {"model": "whisper-1", "response_format": "json"}
-                logger.info("Transcribing video audio track via OpenAI Whisper API...")
+                data = {
+                    "model": "whisper-1",
+                    "response_format": "verbose_json",
+                    "temperature": "0.0"
+                }
+                logger.info("Transcribing video audio track via OpenAI Whisper API (verbose_json)...")
                 res = requests.post("https://api.openai.com/v1/audio/transcriptions", headers=headers, files=files, data=data, timeout=30)
                 if res.status_code == 200:
                     result = res.json()
                     transcript_text = result.get("text", "").strip()
-                    if transcript_text:
-                        logger.info("Successfully transcribed audio track via Whisper: '%s'", transcript_text[:100])
+                    language = result.get("language", "English")
+                    duration = result.get("duration", 0.0)
+                    segments = result.get("segments", [])
+                    segment_summary = []
+                    for seg in segments[:8]:
+                        start = round(seg.get("start", 0.0), 1)
+                        end = round(seg.get("end", 0.0), 1)
+                        stext = seg.get("text", "").strip()
+                        if stext:
+                            segment_summary.append(f"[{start}s-{end}s]: \"{stext}\"")
+                    
+                    seg_str = "; ".join(segment_summary) if segment_summary else transcript_text
+
+                    if transcript_text or seg_str:
+                        logger.info("Successfully transcribed audio track via Whisper (%s, %s): '%s'", language, duration, transcript_text[:100])
                         return {
                             "has_audio": True,
-                            "transcript": transcript_text,
+                            "transcript": transcript_text or "Audio track detected",
+                            "language": language,
+                            "time_aligned_dialogue": seg_str
                         }
         except Exception as e:
             logger.info("OpenAI Whisper transcription skipped or failed: %s", e)
@@ -255,7 +274,7 @@ class ModelLoader:
         model_name: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Executes a SINGLE OpenAI Vision API call sending ALL 10 keyframe images + Whisper audio transcription in ONE ChatCompletion request.
+        Executes a SINGLE OpenAI Vision API call sending ALL 12 sharp keyframe images + Whisper audio transcription in ONE ChatCompletion request.
         Uses 'detail: low' (85 tokens per frame) to minimize token consumption and reduce latency.
         """
         openai_key = os.environ.get("OPENAI_API_KEY") or self.openai_api_key
@@ -267,7 +286,7 @@ class ModelLoader:
             logger.warning("No frame paths provided for OpenAI vision analysis.")
             return None
 
-        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=10)
+        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=12)
         if not sample_frames:
             return None
 
@@ -275,7 +294,9 @@ class ModelLoader:
         audio_info = self.transcribe_audio_openai(audio_path) if audio_path else None
         system_text = prompt or OPENAI_VISION_SYSTEM_PROMPT
         if audio_info and audio_info.get("transcript"):
-            system_text += f"\n\nAUDIO & DIALOGUE DETECTED IN VIDEO TRACK:\nSpoken Speech/Dialogue: \"{audio_info['transcript']}\"\nFactor in this spoken dialogue and audio mood when analyzing lip movement, expressions, and constructing model prompts."
+            dialogue_str = audio_info.get("time_aligned_dialogue") or audio_info.get("transcript")
+            lang_str = audio_info.get("language", "English")
+            system_text += f"\n\nAUDIO & TIME-ALIGNED DIALOGUE DETECTED IN VIDEO (Language: {lang_str}):\n{dialogue_str}\n\nCRITICAL AUDIO DIRECTIVE:\n- Incorporate the exact spoken words, dialogue timing, lip movement sync, speaker expression, and acoustic mood into the prompt synthesis."
 
         content_items: List[Dict[str, Any]] = [
             {"type": "text", "text": system_text}

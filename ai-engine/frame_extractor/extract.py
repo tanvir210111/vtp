@@ -18,7 +18,8 @@ class FrameExtractor:
         os.makedirs(output_dir, exist_ok=True)
         metadata = self.ffmpeg.get_metadata(video_path)
         
-        frames = self.ffmpeg.extract_frames(video_path, output_dir, interval_sec)
+        raw_frames = self.ffmpeg.extract_frames(video_path, output_dir, interval_sec=1.0)
+        frames = self.ffmpeg.filter_sharp_frames(raw_frames, target_count=12)
         
         # Extract audio track for speech, dialogue & audio mood analysis
         audio_target_path = os.path.join(output_dir, "audio.mp3")

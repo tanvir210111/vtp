@@ -150,7 +150,7 @@ class FFmpegWrapper:
         return []
 
     def extract_audio(self, video_path: str, output_audio_path: str) -> Optional[str]:
-        """Extract audio track from video file into MP3 format for speech & audio mood analysis."""
+        """Extract high-fidelity 44.1kHz audio track from video file for precise speech & acoustic analysis."""
         if not video_path or not os.path.exists(video_path):
             return None
 
@@ -161,16 +161,56 @@ class FFmpegWrapper:
             "-i", video_path,
             "-vn",
             "-acodec", "libmp3lame",
-            "-ar", "16000",
-            "-ac", "1",
+            "-q:a", "0",
+            "-ar", "44100",
+            "-ac", "2",
             output_audio_path
         ]
         try:
             subprocess.run(cmd, capture_output=True, check=True)
             if os.path.exists(output_audio_path) and os.path.getsize(output_audio_path) > 1000:
-                logger.info("Successfully extracted audio track to %s", output_audio_path)
+                logger.info("Successfully extracted 44.1kHz high-fidelity audio track to %s", output_audio_path)
                 return output_audio_path
         except Exception as e:
-            logger.info("Audio extraction via FFmpeg CLI skipped or unavailable: %s", e)
+            logger.info("High-fidelity audio extraction via FFmpeg CLI skipped: %s", e)
 
         return None
+
+    @staticmethod
+    def filter_sharp_frames(frame_paths: List[str], target_count: int = 12) -> List[str]:
+        """Filters keyframe images based on OpenCV Laplacian variance sharpness score to discard motion blur."""
+        if not frame_paths or len(frame_paths) <= target_count:
+            return frame_paths
+
+        scored_frames = []
+        for path in frame_paths:
+            if not os.path.exists(path):
+                continue
+            try:
+                img = cv2.imread(path)
+                if img is not None:
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                    scored_frames.append((path, variance))
+                else:
+                    scored_frames.append((path, 0.0))
+            except Exception:
+                scored_frames.append((path, 0.0))
+
+        if not scored_frames:
+            return frame_paths
+
+        # Keep top sharpest frames
+        scored_frames.sort(key=lambda x: x[1], reverse=True)
+        top_k = max(target_count, int(len(scored_frames) * 0.75))
+        sharp_paths = set([f[0] for f in scored_frames[:top_k]])
+
+        # Maintain chronological order of selected sharp frames
+        chronological_sharp = [p for p in frame_paths if p in sharp_paths]
+
+        if len(chronological_sharp) <= target_count:
+            return chronological_sharp
+
+        step = len(chronological_sharp) / target_count
+        indices = sorted({int(i * step) for i in range(target_count)})
+        return [chronological_sharp[i] for i in indices]
