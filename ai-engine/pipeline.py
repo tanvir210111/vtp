@@ -5,7 +5,7 @@ Integrates Phase 1 (Frame Extractor), Phase 2 (Scene Detection), Phase 3 (Vision
 import os
 import time
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from frame_extractor.extract import FrameExtractor
 from frame_extractor.thumbnail import ThumbnailGenerator
