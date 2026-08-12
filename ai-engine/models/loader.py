@@ -8,7 +8,7 @@ import json
 import os
 import time
 import base64
-import logging
+import sys
 import requests
 import warnings
 from typing import List, Dict, Any, Optional

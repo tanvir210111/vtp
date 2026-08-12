@@ -6,7 +6,7 @@ import os
 import subprocess
 import logging
 import cv2
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
