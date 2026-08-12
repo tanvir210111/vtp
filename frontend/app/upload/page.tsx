@@ -14,7 +14,7 @@ import { StylePresetId } from "@/types/prompt";
 export default function UploadPage() {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedStyle, setSelectedStyle] = useState<StylePresetId>("cinematic");
+  const [selectedStyle, setSelectedStyle] = useState<StylePresetId>("standard");
   
   const { isUploading, error: uploadError, uploadFile } = useUpload();
   const { isGenerating, error: genError, generate } = useGenerate();

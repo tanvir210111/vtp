@@ -7,7 +7,7 @@ export function useGenerate() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<VideoTaskState | null>(null);
 
-  const generate = async (taskId: string, stylePreset: string = "cinematic") => {
+  const generate = async (taskId: string, stylePreset: string = "standard") => {
     setIsGenerating(true);
     setError(null);
     try {

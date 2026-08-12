@@ -21,16 +21,27 @@ export async function uploadVideoApi(file: File): Promise<any> {
   return data;
 }
 
+function normalizeStylePreset(stylePreset: string): string {
+  if (stylePreset === "cinematic" || stylePreset === "anime") {
+    return "creative";
+  }
+  if (stylePreset !== "standard" && stylePreset !== "creative") {
+    return "standard";
+  }
+  return stylePreset;
+}
+
 export async function generatePromptsApi(
   taskId: string,
   stylePreset: string = "standard",
   sceneThreshold: number = 0.35
 ): Promise<any> {
+  const normalizedStyle = normalizeStylePreset(stylePreset);
   const payload = {
     video_id: taskId,
     task_id: taskId,
-    style: stylePreset,
-    style_preset: stylePreset,
+    style: normalizedStyle,
+    style_preset: normalizedStyle,
     scene_threshold: sceneThreshold,
   };
   console.log("[DEBUG] generatePromptsApi request:", payload);

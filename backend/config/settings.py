@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     PORT: int = 8000
     CORS_ORIGINS: list[str] = ["*"]
 
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
     GEMINI_API_KEY: str = ""
 
     BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,6 +30,9 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Make sure the runtime environment also sees the key for subprocesses and imported modules.
+# Make sure the runtime environment also sees the keys for subprocesses and imported modules.
+if settings.OPENAI_API_KEY:
+    os.environ.setdefault("OPENAI_API_KEY", settings.OPENAI_API_KEY)
 if settings.GEMINI_API_KEY:
     os.environ.setdefault("GEMINI_API_KEY", settings.GEMINI_API_KEY)
+

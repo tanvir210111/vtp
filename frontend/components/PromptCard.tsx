@@ -22,7 +22,17 @@ export default function PromptCard({ prompts, analysis, taskId }: PromptCardProp
     { id: "flux", label: "Flux.1" },
   ];
 
-  const currentPrompt = prompts[activeTab] || prompts["veo"] || prompts["standard"] || "";
+  const normalizedPrompts = {
+    ...prompts,
+    creative: prompts.creative || prompts.cinematic || prompts.anime || prompts.standard,
+  };
+  const currentPrompt =
+    normalizedPrompts[activeTab] ||
+    normalizedPrompts["veo"] ||
+    normalizedPrompts["standard"] ||
+    normalizedPrompts["creative"] ||
+    Object.values(normalizedPrompts)[0] ||
+    "No prompt available. Please retry generation.";
 
   // Safe String Helper Formatters for Vision Breakdown
   const getLightingText = () => {
