@@ -281,8 +281,8 @@ class ModelLoader:
         model_name: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Executes a SINGLE OpenAI Vision API call sending ALL 12 sharp keyframe images + Whisper audio transcription in ONE ChatCompletion request.
-        Uses 'detail: low' (85 tokens per frame) to minimize token consumption and reduce latency.
+        Executes a SINGLE OpenAI Vision API call sending 6 representative keyframe images (0%, 20%, 40%, 60%, 80%, 100%) + Whisper audio transcription in ONE ChatCompletion request.
+        Uses lightweight 1024px images and 'detail: low' (85 tokens per frame) to minimize token consumption and reduce latency to ~5-8s.
         """
         openai_key = os.environ.get("OPENAI_API_KEY") or self.openai_api_key
         if not openai_key:
@@ -293,7 +293,7 @@ class ModelLoader:
             logger.warning("No frame paths provided for OpenAI vision analysis.")
             return None
 
-        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=12)
+        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=6)
         if not sample_frames:
             return None
 
@@ -309,22 +309,22 @@ class ModelLoader:
             {"type": "text", "text": system_text}
         ]
 
+        percentages = [0, 20, 40, 60, 80, 100]
         valid_frames = 0
         total_sample = len(sample_frames)
         for idx, fpath in enumerate(sample_frames):
-            b64_str = self.encode_image_to_base64_jpeg(fpath, max_dim=1536)
+            b64_str = self.encode_image_to_base64_jpeg(fpath, max_dim=1024)
             if b64_str:
-                # Add explicit chronological timestamp label for exact object trajectory tracking
-                time_est = round((idx / max(1, total_sample - 1)) * 15.0, 1)
+                pct = percentages[idx] if idx < len(percentages) else int((idx / max(1, total_sample - 1)) * 100)
                 content_items.append({
                     "type": "text",
-                    "text": f"--- SEQUENCE KEYFRAME {idx + 1} OF {total_sample} [Timestamp: ~{time_est}s] ---"
+                    "text": f"--- REPRESENTATIVE KEYFRAME {idx + 1} OF {total_sample} [{pct}% Video Progress] ---"
                 })
                 content_items.append({
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:image/jpeg;base64,{b64_str}",
-                        "detail": "high"
+                        "detail": "low"
                     }
                 })
                 valid_frames += 1
@@ -352,8 +352,8 @@ class ModelLoader:
         }
 
         try:
-            logger.info("Sending SINGLE OpenAI Vision API request for %d keyframe images using model '%s'...", valid_frames, model)
-            res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=45)
+            logger.info("Sending SINGLE OpenAI Vision API request for %d lightweight keyframe images using model '%s'...", valid_frames, model)
+            res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=40)
             if res.status_code == 200:
                 data = res.json()
                 choice = data.get("choices", [{}])[0]

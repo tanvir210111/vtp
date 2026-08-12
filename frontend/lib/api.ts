@@ -62,7 +62,7 @@ export async function generatePromptsApi(
   console.log("[PIPELINE] generation:start request:", payload);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s generation timeout
+  const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s generation timeout
 
   try {
     const res = await fetch(`${API_BASE_URL}/generate`, {
@@ -84,8 +84,8 @@ export async function generatePromptsApi(
   } catch (err: any) {
     clearTimeout(timeoutId);
     if (err.name === "AbortError") {
-      console.error("[PIPELINE] generation:timeout (>45s)");
-      throw new Error("Frame extraction and AI generation timed out. Please retry with a shorter video clip.");
+      console.error("[PIPELINE] generation:timeout (>90s)");
+      throw new Error("AI Vision generation timed out after 90 seconds. Click 'Retry Generation' to retry using existing extracted frames.");
     }
     throw err;
   }

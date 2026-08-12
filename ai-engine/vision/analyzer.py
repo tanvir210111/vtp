@@ -34,8 +34,8 @@ class VisionAnalyzer:
         duration = float(meta.get("duration_seconds", meta.get("duration", 10.0)))
         fps = int(meta.get("fps", 30))
 
-        # Select 10 frames evenly spaced across 15sec video clip
-        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=10)
+        # Select exactly 6 representative keyframes (0%, 20%, 40%, 60%, 80%, 100%)
+        sample_frames = self._select_evenly_spaced(frame_paths, max_frames=6)
 
         raw_vision_response = None
         engine_mode = None

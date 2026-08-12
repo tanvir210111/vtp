@@ -102,6 +102,87 @@ class FFmpegWrapper:
         logger.info("[PIPELINE] video:metadata:loaded (Default fallback): %s", meta)
         return meta
 
+    def extract_representative_6_frames(self, video_path: str, output_dir: str, duration_seconds: float = 10.0) -> List[str]:
+        """
+        Extract exactly 6 representative keyframes corresponding to 0%, 20%, 40%, 60%, 80%, and 100% video timestamps.
+        Resizes frames to lightweight max 1024px resolution for fast encoding and low latency.
+        """
+        logger.info("[PIPELINE] representative_sampling:start (0%%, 20%%, 40%%, 60%%, 80%%, 100%%) for %s", video_path)
+        os.makedirs(output_dir, exist_ok=True)
+
+        percentages = [0.0, 0.20, 0.40, 0.60, 0.80, 1.00]
+        extracted_paths = []
+
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if cap.isOpened():
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
+                fps = float(cap.get(cv2.CAP_PROP_FPS)) or 30.0
+
+                if total_frames <= 0 and duration_seconds > 0:
+                    total_frames = int(duration_seconds * fps)
+
+                for idx, pct in enumerate(percentages, start=1):
+                    target_frame = min(max(0, int(pct * (total_frames - 1))), max(0, total_frames - 1)) if total_frames > 1 else 0
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
+                    ret, frame = cap.read()
+
+                    if not ret:
+                        # Fallback seek by timestamp in msec
+                        target_msec = pct * (duration_seconds * 1000.0)
+                        cap.set(cv2.CAP_PROP_POS_MSEC, target_msec)
+                        ret, frame = cap.read()
+
+                    if ret and frame is not None:
+                        # Lightweight downscale: max dimension 1024px
+                        h, w = frame.shape[:2]
+                        max_dim = 1024
+                        if max(h, w) > max_dim:
+                            scale = max_dim / float(max(h, w))
+                            new_w, new_h = max(1, int(w * scale)), max(1, int(h * scale))
+                            frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+                        out_path = os.path.join(output_dir, f"frame_{idx:04d}.jpg")
+                        cv2.imwrite(out_path, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+                        extracted_paths.append(out_path)
+                        logger.info("[PIPELINE] representative_frame:%d (%d%%) -> %s", idx, int(pct * 100), out_path)
+
+                cap.release()
+                if len(extracted_paths) == 6:
+                    logger.info("[PIPELINE] representative_sampling:complete (6 frames extracted)")
+                    return extracted_paths
+        except Exception as e:
+            logger.warning(f"[PIPELINE] Representative OpenCV frame extraction failed: {e}")
+
+        # Fallback: extract regular frames and pick 0%, 20%, 40%, 60%, 80%, 100%
+        raw_frames = self.extract_frames(video_path, output_dir, interval_sec=1.0)
+        if raw_frames:
+            n = len(raw_frames)
+            sampled = []
+            for idx, pct in enumerate(percentages, start=1):
+                raw_idx = min(n - 1, max(0, int(pct * (n - 1))))
+                target_path = os.path.join(output_dir, f"frame_{idx:04d}.jpg")
+                src_path = raw_frames[raw_idx]
+                if src_path != target_path and os.path.exists(src_path):
+                    try:
+                        img = cv2.imread(src_path)
+                        if img is not None:
+                            h, w = img.shape[:2]
+                            if max(h, w) > 1024:
+                                scale = 1024.0 / float(max(h, w))
+                                img = cv2.resize(img, (max(1, int(w * scale)), max(1, int(h * scale))), interpolation=cv2.INTER_AREA)
+                            cv2.imwrite(target_path, img, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+                            sampled.append(target_path)
+                        else:
+                            sampled.append(src_path)
+                    except Exception:
+                        sampled.append(src_path)
+                else:
+                    sampled.append(src_path)
+            return sampled
+
+        return []
+
     def extract_frames(self, video_path: str, output_dir: str, interval_sec: float = 1.5) -> List[str]:
         """Extract keyframes at regular intervals using FFmpeg or OpenCV."""
         logger.info("[PIPELINE] extraction:start: %s -> %s", video_path, output_dir)

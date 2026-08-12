@@ -17,21 +17,32 @@ class FrameExtractor:
         """Extract frames from video and return frame paths + metadata."""
         logger.info("[PIPELINE] FrameExtractor:process start for %s", video_path)
         os.makedirs(output_dir, exist_ok=True)
+        
+        # Check for existing valid frames (frame reuse on retry)
+        existing_frames = sorted([
+            os.path.join(output_dir, f) for f in os.listdir(output_dir)
+            if f.startswith("frame_") and f.endswith(".jpg") and os.path.getsize(os.path.join(output_dir, f)) > 500
+        ])
+        
         metadata = self.ffmpeg.get_metadata(video_path)
         
-        raw_frames = self.ffmpeg.extract_frames(video_path, output_dir, interval_sec=1.0)
-        frames = self.ffmpeg.filter_sharp_frames(raw_frames, target_count=12)
-        
+        if existing_frames and len(existing_frames) >= 6:
+            logger.info("[PIPELINE] Reusing existing %d extracted keyframes from %s", len(existing_frames), output_dir)
+            frames = existing_frames[:6]
+        else:
+            # Extract 6 representative keyframes (0%, 20%, 40%, 60%, 80%, 100%)
+            frames = self.ffmpeg.extract_representative_6_frames(video_path, output_dir, duration_seconds=metadata.get("duration_seconds", 10.0))
+
         # Extract audio track for speech, dialogue & audio mood analysis
         audio_target_path = os.path.join(output_dir, "audio.mp3")
         extracted_audio_path = self.ffmpeg.extract_audio(video_path, audio_target_path)
         
-        # If FFmpeg didn't produce files or isn't installed, synthesize clean visual keyframes for analysis
+        # If no keyframes produced, synthesize clean visual keyframes for analysis
         if not frames:
             logger.info("[PIPELINE] Generating synthetic analysis keyframes for processing pipeline...")
             frames = self._generate_fallback_frames(output_dir, metadata["duration_seconds"])
             
-        logger.info("[PIPELINE] FrameExtractor:process complete. %d frames available.", len(frames))
+        logger.info("[PIPELINE] FrameExtractor:process complete. %d representative frames available.", len(frames))
         return {
             "metadata": metadata,
             "frame_paths": frames,

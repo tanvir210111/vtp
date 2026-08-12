@@ -53,18 +53,22 @@ export default function HomePage() {
       setIsProcessing(true);
       setError(null);
       
-      console.log("[PIPELINE] upload:start");
-      setStepState("uploading");
-
-      // Step 1: Upload video file
-      const uploadRes = await uploadVideo(selectedFile);
-      console.log("[PIPELINE] upload:complete", uploadRes);
-      const newTaskId = uploadRes.video_id || uploadRes.task_id || uploadRes.id;
+      // Step 1: Upload video file (or reuse existing taskId on retry)
+      let newTaskId = taskId;
       if (!newTaskId) {
-        throw new Error(uploadRes.message || "Failed to retrieve upload task ID.");
+        console.log("[PIPELINE] upload:start");
+        setStepState("uploading");
+        const uploadRes = await uploadVideo(selectedFile);
+        console.log("[PIPELINE] upload:complete", uploadRes);
+        newTaskId = uploadRes.video_id || uploadRes.task_id || uploadRes.id;
+        if (!newTaskId) {
+          throw new Error(uploadRes.message || "Failed to retrieve upload task ID.");
+        }
+        console.log("[PIPELINE] task_id:", newTaskId);
+        setTaskId(newTaskId);
+      } else {
+        console.log("[PIPELINE] retry:reusing existing task_id:", newTaskId);
       }
-      console.log("[PIPELINE] task_id:", newTaskId);
-      setTaskId(newTaskId);
 
       // Step 2 & 3: Frame extraction & visual analysis
       console.log("[PIPELINE] extraction:start");
