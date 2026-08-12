@@ -90,6 +90,10 @@ OPENAI_VISION_SYSTEM_PROMPT = (
     "- DO NOT RETURN SHORT PROMPTS, ONE-LINERS, OR ABSTRACT SUMMARIES.\n"
     "- Every single prompt in 'model_prompts' (midjourney, flux, sora, veo, kling, runway, luma) MUST be a complete, highly descriptive, 150 to 300 word visual narrative masterwork.\n"
     "- Detail the exact subject, micro facial expressions, eye gaze, head position, body posture, hand gestures, exact wardrobe & fabric colors, background architecture, volumetric lighting sources, color palette hex codes, lens optics, and camera motion.\n\n"
+    "CRITICAL DIRECTIVE 4: EXACT OBJECT MOVEMENT & KINETIC TRAJECTORY TRACKING\n"
+    "- Trace the exact spatial path, direction, velocity, and physical interaction of every object and subject across the 12 sequence keyframes.\n"
+    "- Specify exact direction of motion (e.g. 'moving diagonally from bottom-left to top-right', 'rotating 45 degrees counter-clockwise', 'hand reaching forward to pick up camera', 'vehicle accelerating towards horizon').\n"
+    "- Detail object physical state changes, spatial placement, speed, and kinetic physics dynamics in 'actions' array, 'summary', and all 'model_prompts'.\n\n"
     "Return ONLY a valid JSON object matching this exact structure:\n"
     "{\n"
     '  "summary": "Exhaustive 4-6 sentence visual summary across all 10 keyframes detailing progression of action, emotions, facial expressions, eye gaze, posture, lighting, and camera work",\n'
@@ -306,14 +310,21 @@ class ModelLoader:
         ]
 
         valid_frames = 0
-        for fpath in sample_frames:
-            b64_str = self.encode_image_to_base64_jpeg(fpath, max_dim=1024)
+        total_sample = len(sample_frames)
+        for idx, fpath in enumerate(sample_frames):
+            b64_str = self.encode_image_to_base64_jpeg(fpath, max_dim=1536)
             if b64_str:
+                # Add explicit chronological timestamp label for exact object trajectory tracking
+                time_est = round((idx / max(1, total_sample - 1)) * 15.0, 1)
+                content_items.append({
+                    "type": "text",
+                    "text": f"--- SEQUENCE KEYFRAME {idx + 1} OF {total_sample} [Timestamp: ~{time_est}s] ---"
+                })
                 content_items.append({
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:image/jpeg;base64,{b64_str}",
-                        "detail": "low"
+                        "detail": "high"
                     }
                 })
                 valid_frames += 1
