@@ -23,11 +23,14 @@ try:
 except ImportError:
     HAS_GENAI_SDK = False
 
+import importlib
+
 try:
     backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "backend"))
     if backend_dir not in sys.path:
-        sys.path.append(backend_dir)
-    from config.settings import settings as backend_settings
+        sys.path.insert(0, backend_dir)
+    config_module = importlib.import_module("config.settings")
+    backend_settings = getattr(config_module, "settings", None)
 except Exception:
     backend_settings = None
 
