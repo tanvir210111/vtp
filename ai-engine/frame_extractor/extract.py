@@ -15,6 +15,7 @@ class FrameExtractor:
 
     def process(self, video_path: str, output_dir: str, interval_sec: float = 2.0) -> Dict[str, Any]:
         """Extract frames from video and return frame paths + metadata."""
+        logger.info("[PIPELINE] FrameExtractor:process start for %s", video_path)
         os.makedirs(output_dir, exist_ok=True)
         metadata = self.ffmpeg.get_metadata(video_path)
         
@@ -27,9 +28,10 @@ class FrameExtractor:
         
         # If FFmpeg didn't produce files or isn't installed, synthesize clean visual keyframes for analysis
         if not frames:
-            logger.info("Generating synthetic analysis keyframes for processing pipeline...")
+            logger.info("[PIPELINE] Generating synthetic analysis keyframes for processing pipeline...")
             frames = self._generate_fallback_frames(output_dir, metadata["duration_seconds"])
             
+        logger.info("[PIPELINE] FrameExtractor:process complete. %d frames available.", len(frames))
         return {
             "metadata": metadata,
             "frame_paths": frames,

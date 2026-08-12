@@ -30,20 +30,51 @@ export default function UploadBox({
       return;
     }
 
-    // Check duration limit (15 seconds max)
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(video.src);
-      if (video.duration > 15.5) {
-        setValidationError(`Video duration (${Math.round(video.duration)}s) exceeds the maximum limit of 15 seconds.`);
+    console.log("[PIPELINE] video:metadata:start probe for", file.name);
+    let handled = false;
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      try {
+        window.URL.revokeObjectURL(video.src);
+      } catch (_) {}
+    };
+
+    const finish = (errMessage?: string) => {
+      if (handled) return;
+      handled = true;
+      cleanup();
+      if (errMessage) {
+        setValidationError(errMessage);
       } else {
+        console.log("[PIPELINE] video:metadata:loaded successfully");
         onFileSelect(file);
       }
     };
-    video.onerror = () => {
-      onFileSelect(file);
+
+    // Check duration limit (15 seconds max)
+    const video = document.createElement("video");
+    video.preload = "metadata";
+
+    const timer = setTimeout(() => {
+      console.warn("[PIPELINE] video:metadata:timeout (>5s), continuing with upload");
+      finish();
+    }, 5000);
+
+    video.onloadedmetadata = () => {
+      const dur = video.duration;
+      console.log("[PIPELINE] video:metadata duration:", dur);
+      if (!isNaN(dur) && isFinite(dur) && dur > 15.5) {
+        finish(`Video duration (${Math.round(dur)}s) exceeds the maximum limit of 15 seconds.`);
+      } else {
+        finish();
+      }
     };
+
+    video.onerror = () => {
+      console.warn("[PIPELINE] video:metadata error event, continuing with upload");
+      finish();
+    };
+
     video.src = URL.createObjectURL(file);
   };
 

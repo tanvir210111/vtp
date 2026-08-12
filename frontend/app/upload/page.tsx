@@ -49,7 +49,7 @@ export default function UploadPage() {
       </div>
 
       {(isUploading || isGenerating) ? (
-        <Loading />
+        <Loading currentState={isUploading ? "uploading" : "generating"} />
       ) : (
         <div className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

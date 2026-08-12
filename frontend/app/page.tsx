@@ -46,33 +46,49 @@ export default function HomePage() {
   const handleGenerate = async () => {
     if (!selectedFile) return;
 
+    let extractTimer: NodeJS.Timeout | null = null;
+    let generateTimer: NodeJS.Timeout | null = null;
+
     try {
       setIsProcessing(true);
       setError(null);
+      
+      console.log("[PIPELINE] upload:start");
       setStepState("uploading");
 
       // Step 1: Upload video file
       const uploadRes = await uploadVideo(selectedFile);
-      console.log("[DEBUG] upload response:", uploadRes);
+      console.log("[PIPELINE] upload:complete", uploadRes);
       const newTaskId = uploadRes.video_id || uploadRes.task_id || uploadRes.id;
       if (!newTaskId) {
         throw new Error(uploadRes.message || "Failed to retrieve upload task ID.");
       }
-      console.log("[DEBUG] task id:", newTaskId);
+      console.log("[PIPELINE] task_id:", newTaskId);
       setTaskId(newTaskId);
 
       // Step 2 & 3: Frame extraction & visual analysis
+      console.log("[PIPELINE] extraction:start");
       setStepState("extracting");
-      await new Promise((resolve) => setTimeout(resolve, 400));
 
-      setStepState("analyzing");
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      // Progressively update step state as backend processes video
+      extractTimer = setTimeout(() => {
+        console.log("[PIPELINE] analysis:start");
+        setStepState("analyzing");
+      }, 2000);
 
-      // Step 4: Run AI Pipeline Prompt Synthesis
-      setStepState("generating");
-      console.log("[DEBUG] generate request", { task_id: newTaskId, style: selectedStyle });
+      generateTimer = setTimeout(() => {
+        console.log("[PIPELINE] generation:start");
+        setStepState("generating");
+      }, 5000);
+
+      // Step 4: Run AI Pipeline Prompt Synthesis on Backend
+      console.log("[PIPELINE] generate request", { task_id: newTaskId, style: selectedStyle });
       const processRes = await generatePrompts(newTaskId, selectedStyle);
-      console.log("[DEBUG] generate response:", processRes);
+      
+      if (extractTimer) clearTimeout(extractTimer);
+      if (generateTimer) clearTimeout(generateTimer);
+
+      console.log("[PIPELINE] generate response:", processRes);
 
       // Validate response
       if (!processRes || processRes.success !== true) {
@@ -83,8 +99,7 @@ export default function HomePage() {
       }
       const prompts = processRes.prompts || {};
       const promptKeys = Object.keys(prompts || {});
-      console.log("[DEBUG] prompts keys:", promptKeys);
-      console.log("[DEBUG] analysis object:", processRes.analysis);
+      console.log("[PIPELINE] prompts keys:", promptKeys);
 
       const hasStandard = Array.isArray(prompts.standard) ? prompts.standard.length > 0 : !!prompts.standard;
       const hasCreative = Array.isArray(prompts.creative) ? prompts.creative.length > 0 : !!prompts.creative;
@@ -93,11 +108,15 @@ export default function HomePage() {
       }
 
       setStepState("completed");
+      console.log("[PIPELINE] completed successfully");
       setResult(processRes);
     } catch (err: any) {
-      console.error("Generation Error:", err);
+      if (extractTimer) clearTimeout(extractTimer);
+      if (generateTimer) clearTimeout(generateTimer);
+      
+      console.error("[PIPELINE] execution error:", err);
       setStepState("failed");
-      setError(err?.message || "Failed to process video. Please check backend connectivity.");
+      setError(err?.message || "Failed to process video frame extraction. Please check backend connectivity or try another clip.");
     } finally {
       setIsProcessing(false);
     }

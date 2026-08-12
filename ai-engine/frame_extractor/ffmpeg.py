@@ -20,6 +20,8 @@ class FFmpegWrapper:
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video file not found at {video_path}")
         
+        logger.info("[PIPELINE] video:metadata:start: %s", video_path)
+
         # Method 1: Try ffprobe
         cmd = [
             self.ffprobe_bin,
@@ -31,7 +33,7 @@ class FFmpegWrapper:
         ]
         
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=10)
             data = json.loads(result.stdout)
             video_stream = next((s for s in data.get("streams", []) if s.get("codec_type") == "video"), {})
             
@@ -45,7 +47,7 @@ class FFmpegWrapper:
             else:
                 fps = float(fps_str)
                 
-            return {
+            meta = {
                 "width": width,
                 "height": height,
                 "resolution": f"{width}x{height}",
@@ -54,8 +56,12 @@ class FFmpegWrapper:
                 "codec": video_stream.get("codec_name", "h264"),
                 "bitrate": int(data.get("format", {}).get("bit_rate", 5000000))
             }
-        except Exception:
-            logger.info(f"FFprobe CLI unavailable. Falling back to OpenCV probe for {video_path}.")
+            logger.info("[PIPELINE] video:metadata:loaded (FFprobe): %s", meta)
+            return meta
+        except subprocess.TimeoutExpired:
+            logger.warning("[PIPELINE] FFprobe subprocess timed out (>10s). Falling back to OpenCV probe.")
+        except Exception as e:
+            logger.info(f"[PIPELINE] FFprobe CLI unavailable ({e}). Falling back to OpenCV probe for {video_path}.")
 
         # Method 2: OpenCV fallback metadata extraction
         try:
@@ -68,7 +74,7 @@ class FFmpegWrapper:
                 duration = round(frame_count / fps, 2) if fps > 0 else 10.0
                 cap.release()
                 
-                return {
+                meta = {
                     "width": width,
                     "height": height,
                     "resolution": f"{width}x{height}",
@@ -77,12 +83,14 @@ class FFmpegWrapper:
                     "codec": "h264",
                     "bitrate": 5000000
                 }
+                logger.info("[PIPELINE] video:metadata:loaded (OpenCV): %s", meta)
+                return meta
         except Exception as e:
-            logger.warning(f"OpenCV metadata probe failed: {e}")
+            logger.warning(f"[PIPELINE] OpenCV metadata probe failed: {e}")
 
         # Method 3: Default fallback
         file_size = os.path.getsize(video_path)
-        return {
+        meta = {
             "width": 1920,
             "height": 1080,
             "resolution": "1920x1080",
@@ -91,9 +99,12 @@ class FFmpegWrapper:
             "codec": "h264",
             "bitrate": file_size * 8 // 10
         }
+        logger.info("[PIPELINE] video:metadata:loaded (Default fallback): %s", meta)
+        return meta
 
     def extract_frames(self, video_path: str, output_dir: str, interval_sec: float = 1.5) -> List[str]:
         """Extract keyframes at regular intervals using FFmpeg or OpenCV."""
+        logger.info("[PIPELINE] extraction:start: %s -> %s", video_path, output_dir)
         os.makedirs(output_dir, exist_ok=True)
         output_pattern = os.path.join(output_dir, "frame_%04d.jpg")
         
@@ -108,14 +119,19 @@ class FFmpegWrapper:
         ]
         
         try:
-            subprocess.run(cmd, capture_output=True, check=True)
+            subprocess.run(cmd, capture_output=True, check=True, timeout=10)
             extracted = sorted([
                 os.path.join(output_dir, f) for f in os.listdir(output_dir) if f.startswith("frame_") and f.endswith(".jpg")
             ])
             if extracted:
+                for idx, path in enumerate(extracted, start=1):
+                    logger.info("[PIPELINE] extraction:frame:%d -> %s", idx, path)
+                logger.info("[PIPELINE] extraction:complete (FFmpeg): %d frames", len(extracted))
                 return extracted
-        except Exception:
-            logger.info("FFmpeg CLI unavailable. Extracting keyframes with OpenCV...")
+        except subprocess.TimeoutExpired:
+            logger.warning("[PIPELINE] FFmpeg frame extraction timed out (>10s). Falling back to OpenCV.")
+        except Exception as e:
+            logger.info(f"[PIPELINE] FFmpeg CLI unavailable ({e}). Extracting keyframes with OpenCV...")
 
         # Method 2: Extract keyframes using OpenCV
         extracted_paths = []
@@ -127,8 +143,9 @@ class FFmpegWrapper:
                 
                 frame_idx = 0
                 saved_count = 0
+                max_read_frames = 1800  # Safeguard limit: max 60s @ 30fps
                 
-                while True:
+                while frame_idx < max_read_frames:
                     ret, frame = cap.read()
                     if not ret:
                         break
@@ -138,15 +155,18 @@ class FFmpegWrapper:
                         out_path = os.path.join(output_dir, f"frame_{saved_count:04d}.jpg")
                         cv2.imwrite(out_path, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
                         extracted_paths.append(out_path)
+                        logger.info("[PIPELINE] extraction:frame:%d -> %s", saved_count, out_path)
                         
                     frame_idx += 1
                     
                 cap.release()
                 if extracted_paths:
+                    logger.info("[PIPELINE] extraction:complete (OpenCV): %d frames", len(extracted_paths))
                     return extracted_paths
         except Exception as e:
-            logger.warning(f"OpenCV frame extraction failed: {e}")
+            logger.warning(f"[PIPELINE] OpenCV frame extraction failed: {e}")
 
+        logger.warning("[PIPELINE] extraction:empty - returning []")
         return []
 
     def extract_audio(self, video_path: str, output_audio_path: str) -> Optional[str]:
@@ -167,10 +187,12 @@ class FFmpegWrapper:
             output_audio_path
         ]
         try:
-            subprocess.run(cmd, capture_output=True, check=True)
+            subprocess.run(cmd, capture_output=True, check=True, timeout=10)
             if os.path.exists(output_audio_path) and os.path.getsize(output_audio_path) > 1000:
-                logger.info("Successfully extracted 44.1kHz high-fidelity audio track to %s", output_audio_path)
+                logger.info("[PIPELINE] audio:extracted: %s", output_audio_path)
                 return output_audio_path
+        except subprocess.TimeoutExpired:
+            logger.warning("[PIPELINE] FFmpeg audio extraction timed out (>10s). Skipping audio.")
         except Exception as e:
             logger.info("High-fidelity audio extraction via FFmpeg CLI skipped: %s", e)
 

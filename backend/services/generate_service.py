@@ -38,25 +38,29 @@ class GenerateService:
             os.environ["GEMINI_API_KEY"] = settings.GEMINI_API_KEY
         
         try:
-            logger.info(f"[GENERATE] task started: {task_id}")
-            logger.info("[GENERATE] pipeline initialized")
+            import time
+            start_t = time.time()
+            logger.info(f"[PIPELINE] task:start: {task_id}")
+            logger.info("[PIPELINE] pipeline:initialized")
             pipeline = VideoToPromptPipeline(
                 storage_dir=settings.STORAGE_DIR,
                 output_dir=settings.OUTPUT_DIR
             )
 
-            logger.info("[GENERATE] frame extraction started")
-            logger.info("[GENERATE] vision analysis started")
-            # Run the pipeline (this may perform multiple internal stages)
+            logger.info("[PIPELINE] extraction:start")
+            # Run the pipeline (this performs extraction, scene detection, vision analysis, prompt synthesis)
             result = pipeline.run(
                 task_id=task.id,
                 video_path=task.file_path,
                 style_preset=style_preset,
                 scene_threshold=scene_threshold
             )
+            
+            elapsed = time.time() - start_t
+            if elapsed > 5.0:
+                logger.info(f"[PIPELINE] extraction:slow elapsed={elapsed:.2f}s")
 
-            logger.info("[GENERATE] vision analysis completed")
-            logger.info("[GENERATE] prompt synthesis started")
+            logger.info("[PIPELINE] generation:complete")
 
             prompts_dict = result.get("prompts", {})
             selected_prompt_text = prompts_dict.get(style_preset) or prompts_dict.get("standard") or ""
@@ -86,12 +90,10 @@ class GenerateService:
 
             db.commit()
             db.refresh(task)
-            logger.info("[GENERATE] prompt synthesis completed")
-            logger.info("[GENERATE] database save completed")
+            logger.info("[PIPELINE] task:completed: %s", task_id)
             return task
         except Exception as e:
-            # Capture traceback and log
-            logger.exception(f"[GENERATE] exception for task {task_id}: {e}")
+            logger.exception(f"[PIPELINE] task:failed {task_id}: {e}")
             task.status = "failed"
             db.commit()
             stage = getattr(e, "stage", "pipeline")

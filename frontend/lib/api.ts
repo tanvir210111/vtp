@@ -1,24 +1,39 @@
 import { API_BASE_URL } from "./constants";
 
 export async function uploadVideoApi(file: File): Promise<any> {
+  console.log("[PIPELINE] upload:start", file.name, `${(file.size / (1024 * 1024)).toFixed(2)}MB`);
   const formData = new FormData();
   formData.append("video", file);
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE_URL}/upload`, {
-    method: "POST",
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s upload timeout
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Upload failed" }));
-    console.error("[DEBUG] upload error:", errorData);
-    throw new Error(errorData.message || errorData.detail || "Upload failed");
+  try {
+    const res = await fetch(`${API_BASE_URL}/upload`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: "Upload failed" }));
+      console.error("[PIPELINE] upload:failed errorData:", errorData);
+      throw new Error(errorData.message || errorData.detail || "Video upload failed on backend.");
+    }
+
+    const data = await res.json();
+    console.log("[PIPELINE] upload:complete", data);
+    return data;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      console.error("[PIPELINE] upload:timeout (>30s)");
+      throw new Error("Video upload timed out after 30 seconds. Please try a smaller video clip.");
+    }
+    throw err;
   }
-
-  const data = await res.json();
-  console.log("[DEBUG] uploadVideoApi response:", data);
-  return data;
 }
 
 function normalizeStylePreset(stylePreset: string): string {
@@ -44,23 +59,36 @@ export async function generatePromptsApi(
     style_preset: normalizedStyle,
     scene_threshold: sceneThreshold,
   };
-  console.log("[DEBUG] generatePromptsApi request:", payload);
+  console.log("[PIPELINE] generation:start request:", payload);
 
-  const res = await fetch(`${API_BASE_URL}/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s generation timeout
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Generation failed" }));
-    console.error("[DEBUG] generate error:", errorData);
-    // If backend provided structured error, rethrow with its message
-    throw new Error(errorData.message || errorData.detail || "Prompt generation failed");
+  try {
+    const res = await fetch(`${API_BASE_URL}/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: "Generation failed" }));
+      console.error("[PIPELINE] generation:failed errorData:", errorData);
+      throw new Error(errorData.message || errorData.detail || "Prompt generation failed on backend.");
+    }
+    const data = await res.json();
+    console.log("[PIPELINE] generation:complete response:", data);
+    return data;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      console.error("[PIPELINE] generation:timeout (>45s)");
+      throw new Error("Frame extraction and AI generation timed out. Please retry with a shorter video clip.");
+    }
+    throw err;
   }
-  const data = await res.json();
-  console.log("[DEBUG] generatePromptsApi response:", data);
-  return data;
 }
 
 export async function getTaskStatusApi(taskId: string): Promise<any> {
