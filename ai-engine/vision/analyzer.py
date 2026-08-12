@@ -20,6 +20,7 @@ class VisionAnalyzer:
     def analyze(
         self,
         frame_paths: List[str],
+        audio_path: Optional[str] = None,
         video_path: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         scenes: Optional[List[Dict[str, Any]]] = None,
@@ -27,11 +28,7 @@ class VisionAnalyzer:
         style_preset: str = "standard",
     ) -> Dict[str, Any]:
         """
-        Orchestrate Vision AI inference over 5-8 sampled keyframe images.
-        1. Executes SINGLE request OpenAI Vision API with all 5-8 keyframe images if OPENAI_API_KEY is configured.
-        2. Falls back to Google Gemini Multimodal Vision if GEMINI_API_KEY is configured.
-        3. Parses raw JSON response into structured Analysis JSON.
-        4. Automatically falls back to OpenCV heuristic analyzer if vision models are offline.
+        Orchestrate Multimodal Vision & Audio AI inference over 10 sampled keyframes + audio track.
         """
         meta = metadata or {}
         duration = float(meta.get("duration_seconds", meta.get("duration", 10.0)))
@@ -43,14 +40,15 @@ class VisionAnalyzer:
         raw_vision_response = None
         engine_mode = None
 
-        # 1. Primary: OpenAI Vision API (Single request containing all 10 keyframes)
+        # 1. Primary: OpenAI Vision + Whisper Audio API (Single request containing all 10 keyframes + audio transcription)
         if self.model_loader.openai_api_key:
             try:
                 raw_vision_response = self.model_loader.analyze_frames_openai_vision(
-                    frame_paths=sample_frames
+                    frame_paths=sample_frames,
+                    audio_path=audio_path
                 )
                 if raw_vision_response:
-                    engine_mode = f"OpenAI Vision API Single-Request ({self.model_loader.openai_model})"
+                    engine_mode = f"OpenAI Vision & Audio Engine ({self.model_loader.openai_model})"
             except Exception as exc:
                 logger.warning("OpenAI vision analysis failed, falling back: %s", exc)
 

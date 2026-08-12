@@ -20,6 +20,10 @@ class FrameExtractor:
         
         frames = self.ffmpeg.extract_frames(video_path, output_dir, interval_sec)
         
+        # Extract audio track for speech, dialogue & audio mood analysis
+        audio_target_path = os.path.join(output_dir, "audio.mp3")
+        extracted_audio_path = self.ffmpeg.extract_audio(video_path, audio_target_path)
+        
         # If FFmpeg didn't produce files or isn't installed, synthesize clean visual keyframes for analysis
         if not frames:
             logger.info("Generating synthetic analysis keyframes for processing pipeline...")
@@ -28,7 +32,8 @@ class FrameExtractor:
         return {
             "metadata": metadata,
             "frame_paths": frames,
-            "frame_count": len(frames)
+            "frame_count": len(frames),
+            "audio_path": extracted_audio_path
         }
 
     def _generate_fallback_frames(self, output_dir: str, duration: float) -> List[str]:

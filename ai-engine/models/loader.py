@@ -219,14 +219,42 @@ class ModelLoader:
         indices = sorted({int(i * step) for i in range(max_frames)})
         return [frame_paths[i] for i in indices]
 
+    def transcribe_audio_openai(self, audio_path: str) -> Optional[Dict[str, Any]]:
+        """Transcribe audio track using OpenAI Whisper API to capture dialogue, speech, and language."""
+        openai_key = os.environ.get("OPENAI_API_KEY") or self.openai_api_key
+        if not openai_key or not audio_path or not os.path.exists(audio_path):
+            return None
+
+        try:
+            headers = {"Authorization": f"Bearer {openai_key}"}
+            with open(audio_path, "rb") as f:
+                files = {"file": (os.path.basename(audio_path), f, "audio/mpeg")}
+                data = {"model": "whisper-1", "response_format": "json"}
+                logger.info("Transcribing video audio track via OpenAI Whisper API...")
+                res = requests.post("https://api.openai.com/v1/audio/transcriptions", headers=headers, files=files, data=data, timeout=30)
+                if res.status_code == 200:
+                    result = res.json()
+                    transcript_text = result.get("text", "").strip()
+                    if transcript_text:
+                        logger.info("Successfully transcribed audio track via Whisper: '%s'", transcript_text[:100])
+                        return {
+                            "has_audio": True,
+                            "transcript": transcript_text,
+                        }
+        except Exception as e:
+            logger.info("OpenAI Whisper transcription skipped or failed: %s", e)
+
+        return None
+
     def analyze_frames_openai_vision(
         self,
         frame_paths: Optional[List[str]] = None,
+        audio_path: Optional[str] = None,
         prompt: Optional[str] = None,
         model_name: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Executes a SINGLE OpenAI Vision API call sending ALL 10 keyframe images in ONE ChatCompletion request.
+        Executes a SINGLE OpenAI Vision API call sending ALL 10 keyframe images + Whisper audio transcription in ONE ChatCompletion request.
         Uses 'detail: low' (85 tokens per frame) to minimize token consumption and reduce latency.
         """
         openai_key = os.environ.get("OPENAI_API_KEY") or self.openai_api_key
@@ -242,8 +270,14 @@ class ModelLoader:
         if not sample_frames:
             return None
 
+        # Check for audio track transcription via Whisper
+        audio_info = self.transcribe_audio_openai(audio_path) if audio_path else None
+        system_text = prompt or OPENAI_VISION_SYSTEM_PROMPT
+        if audio_info and audio_info.get("transcript"):
+            system_text += f"\n\nAUDIO & DIALOGUE DETECTED IN VIDEO TRACK:\nSpoken Speech/Dialogue: \"{audio_info['transcript']}\"\nFactor in this spoken dialogue and audio mood when analyzing lip movement, expressions, and constructing model prompts."
+
         content_items: List[Dict[str, Any]] = [
-            {"type": "text", "text": prompt or OPENAI_VISION_SYSTEM_PROMPT}
+            {"type": "text", "text": system_text}
         ]
 
         valid_frames = 0

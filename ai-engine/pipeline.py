@@ -45,6 +45,7 @@ class VideoToPromptPipeline:
         extraction_result = self.frame_extractor.process(video_path, frames_dir, interval_sec=1.5)
         metadata = extraction_result["metadata"]
         frame_paths = extraction_result["frame_paths"]
+        audio_path = extraction_result.get("audio_path")
         
         # Step 2: Generate thumbnail poster
         ThumbnailGenerator.generate_poster(frame_paths, poster_path)
@@ -56,9 +57,10 @@ class VideoToPromptPipeline:
         scenes = scene_result.get("scenes", [])
         timeline = SceneTimelineBuilder.build_timeline_json(scenes)
         
-        # Step 4: Vision Feature Analysis (Assembles complete Analysis JSON)
+        # Step 4: Vision & Audio Feature Analysis (Assembles complete Analysis JSON)
         analysis = self.vision_analyzer.analyze(
             frame_paths=frame_paths,
+            audio_path=audio_path,
             video_path=video_path,
             metadata=metadata,
             scenes=scenes,

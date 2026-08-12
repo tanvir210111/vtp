@@ -148,3 +148,29 @@ class FFmpegWrapper:
             logger.warning(f"OpenCV frame extraction failed: {e}")
 
         return []
+
+    def extract_audio(self, video_path: str, output_audio_path: str) -> Optional[str]:
+        """Extract audio track from video file into MP3 format for speech & audio mood analysis."""
+        if not video_path or not os.path.exists(video_path):
+            return None
+
+        os.makedirs(os.path.dirname(output_audio_path), exist_ok=True)
+        cmd = [
+            self.ffmpeg_bin,
+            "-y",
+            "-i", video_path,
+            "-vn",
+            "-acodec", "libmp3lame",
+            "-ar", "16000",
+            "-ac", "1",
+            output_audio_path
+        ]
+        try:
+            subprocess.run(cmd, capture_output=True, check=True)
+            if os.path.exists(output_audio_path) and os.path.getsize(output_audio_path) > 1000:
+                logger.info("Successfully extracted audio track to %s", output_audio_path)
+                return output_audio_path
+        except Exception as e:
+            logger.info("Audio extraction via FFmpeg CLI skipped or unavailable: %s", e)
+
+        return None
