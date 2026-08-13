@@ -20,7 +20,9 @@ export default function HomePage() {
   const [stepState, setStepState] = useState<
     | "idle"
     | "uploading"
+    | "uploaded"
     | "extracting"
+    | "extracted"
     | "analyzing"
     | "generating"
     | "completed"
@@ -53,7 +55,7 @@ export default function HomePage() {
       setIsProcessing(true);
       setError(null);
       
-      // Step 1: Upload video file (or reuse existing taskId on retry)
+      // Step 1: Upload video file (or reuse existing taskId on retry/re-generate)
       let newTaskId = taskId;
       if (!newTaskId) {
         console.log("[PIPELINE] upload:start");
@@ -66,11 +68,12 @@ export default function HomePage() {
         }
         console.log("[PIPELINE] task_id:", newTaskId);
         setTaskId(newTaskId);
+        setStepState("uploaded");
       } else {
         console.log("[PIPELINE] retry:reusing existing task_id:", newTaskId);
       }
 
-      // Step 2 & 3: Frame extraction & visual analysis
+      // Step 2: Extraction & Visual analysis (starts strictly AFTER upload completes)
       console.log("[PIPELINE] extraction:start");
       setStepState("extracting");
 
@@ -85,7 +88,7 @@ export default function HomePage() {
         setStepState("generating");
       }, 5000);
 
-      // Step 4: Run AI Pipeline Prompt Synthesis on Backend
+      // Step 3: Run AI Pipeline Prompt Synthesis on Backend
       console.log("[PIPELINE] generate request", { task_id: newTaskId, style: selectedStyle });
       const processRes = await generatePrompts(newTaskId, selectedStyle);
       

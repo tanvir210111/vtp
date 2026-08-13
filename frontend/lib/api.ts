@@ -1,13 +1,20 @@
 import { API_BASE_URL } from "./constants";
 
 export async function uploadVideoApi(file: File): Promise<any> {
-  console.log("[PIPELINE] upload:start", file.name, `${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+  console.log("[PIPELINE] API_BASE_URL:", API_BASE_URL);
+  console.log("[PIPELINE] upload:start", file.name, `${(file.size / (1024 * 1024)).toFixed(2)}MB`, file.type);
+
+  const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    throw new Error(`File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds maximum allowed limit of 100 MB.`);
+  }
+
   const formData = new FormData();
   formData.append("video", file);
   formData.append("file", file);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s upload timeout
+  const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s (3m) upload timeout for large videos & cold starts
 
   try {
     const res = await fetch(`${API_BASE_URL}/upload`, {
@@ -29,8 +36,8 @@ export async function uploadVideoApi(file: File): Promise<any> {
   } catch (err: any) {
     clearTimeout(timeoutId);
     if (err.name === "AbortError") {
-      console.error("[PIPELINE] upload:timeout (>30s)");
-      throw new Error("Video upload timed out after 30 seconds. Please try a smaller video clip.");
+      console.error("[PIPELINE] upload:timeout (>180s)");
+      throw new Error("Upload is taking longer than expected. Please check the backend connection.");
     }
     throw err;
   }

@@ -30,6 +30,12 @@ export default function UploadBox({
       return;
     }
 
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+    if (file.size > MAX_FILE_SIZE) {
+      setValidationError(`File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds maximum allowed limit of 100 MB.`);
+      return;
+    }
+
     console.log("[PIPELINE] video:metadata:start probe for", file.name);
     let handled = false;
     const cleanup = () => {

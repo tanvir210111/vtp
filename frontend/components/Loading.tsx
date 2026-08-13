@@ -7,7 +7,9 @@ interface LoadingProps {
   currentState?:
     | "idle"
     | "uploading"
+    | "uploaded"
     | "extracting"
+    | "extracted"
     | "analyzing"
     | "generating"
     | "completed"
@@ -23,9 +25,28 @@ export default function Loading({ currentState = "uploading" }: LoadingProps) {
     { id: 5, label: "Done", icon: CheckCircle2 },
   ];
 
-  const stateOrder = ["idle", "uploading", "extracting", "analyzing", "generating", "completed"];
-  const isFailed = currentState === "failed";
-  const currentStep = isFailed ? 1 : Math.min(Math.max(stateOrder.indexOf(currentState) + 1, 1), steps.length);
+  const getStepNumber = (state: string): number => {
+    switch (state) {
+      case "uploading":
+        return 1;
+      case "uploaded":
+      case "extracting":
+        return 2;
+      case "extracted":
+      case "analyzing":
+        return 3;
+      case "generating":
+        return 4;
+      case "completed":
+        return 5;
+      case "failed":
+        return 1;
+      default:
+        return 1;
+    }
+  };
+
+  const currentStep = getStepNumber(currentState);
 
   return (
     <div className="flex flex-col items-center justify-center p-8 sm:p-12 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 shadow-lg dark:shadow-2xl backdrop-blur-xl">
