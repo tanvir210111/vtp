@@ -34,6 +34,7 @@ export default function HomePage() {
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
+    setTaskId(null); // Clear previous task ID so new video is uploaded and analyzed fresh
     setError(null);
     setResult(null);
   };
